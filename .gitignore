@@ -10,3 +10,6 @@ supabase/.temp
 
 # Outils locaux
 .claude/
+
+.vercel
+.env*
