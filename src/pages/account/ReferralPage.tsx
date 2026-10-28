@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CheckCircle2, Copy, Gift, MapPin, MessageCircle, Phone, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Copy, Gift, MapPin, Users } from 'lucide-react';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Badge } from '../../components/ui/Badge';
@@ -44,8 +44,6 @@ function TeamList({ title, members, empty }: { title: string; members: TeamMembe
 }
 
 function MemberCard({ member: m }: { member: TeamMember }) {
-  // Les numéros complets (niveau 1) commencent par 0 : on propose l'appel et WhatsApp
-  const callable = m.phone && /^0\d{9}$/.test(m.phone);
   return (
     <li className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-start gap-3">
@@ -71,13 +69,34 @@ function MemberCard({ member: m }: { member: TeamMember }) {
         <div className="min-w-0"><dt className="text-[11px] text-slate-500">Investi</dt><dd className="break-words text-sm font-semibold">{formatPrice(m.invested_amount, CURRENCY)}</dd></div>
         <div className="min-w-0"><dt className="text-[11px] text-slate-500">Vos gains</dt><dd className="break-words text-sm font-semibold text-accent-700">{formatPrice(m.commissions, CURRENCY)}</dd></div>
       </dl>
-      {callable && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <a href={`tel:+243${m.phone!.slice(1)}`} className="btn-secondary rounded-xl py-2.5"><Phone className="h-4 w-4" /> Appeler</a>
-          <a href={`https://wa.me/243${m.phone!.slice(1)}`} target="_blank" rel="noopener noreferrer" className="btn-secondary rounded-xl py-2.5"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
-        </div>
-      )}
     </li>
+  );
+}
+
+/** Tuyau qui se remplit en vert selon la progression (animé à l'ouverture de la page). */
+function RewardTube({ percent, label }: { percent: number; label: string }) {
+  const [filled, setFilled] = useState(0);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setFilled(percent));
+    return () => cancelAnimationFrame(frame);
+  }, [percent]);
+  return (
+    <div
+      className="mt-2 h-4 overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_2px_4px_rgba(15,23,42,0.12)] ring-1 ring-slate-200"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(percent)}
+      aria-label={label}
+    >
+      <div
+        className="relative h-full rounded-full bg-gradient-to-b from-green-400 via-green-500 to-green-600 transition-[width] duration-1000 ease-out"
+        style={{ width: `${filled}%` }}
+      >
+        {/* Reflet du tuyau */}
+        <span className="absolute inset-x-2 top-0.5 h-1 rounded-full bg-white/40" aria-hidden="true" />
+      </div>
+    </div>
   );
 }
 
@@ -88,21 +107,22 @@ function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
   return (
     <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center gap-2">
-        <Gift className="h-5 w-5 text-accent-600" aria-hidden="true" />
+        <Gift className="h-5 w-5 text-green-600" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-slate-900">Récompenses d'équipe</h2>
       </div>
       <p className="mt-1 text-sm text-slate-500">
         Seuls vos invités directs ayant déjà acheté au moins un produit comptent. La récompense est versée automatiquement sur votre compte Drivest.
       </p>
-      <ul className="mt-4 space-y-4">
+      <ul className="mt-5 space-y-5">
         {rewards.map((r) => {
           const done = Boolean(r.granted_at);
           const progress = Math.min(invested, r.invited_count);
+          const percent = done ? 100 : (progress / r.invited_count) * 100;
           return (
             <li key={r.tier_id}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
-                <p className="font-medium text-slate-900">{r.invited_count} invités ayant investi</p>
-                <p className={done ? 'font-semibold text-accent-700' : 'text-slate-500'}>
+                <p className="font-medium text-slate-900">{r.invited_count} invités directs (ayant investi)</p>
+                <p className={done ? 'font-semibold text-green-700' : 'text-slate-500'}>
                   {done ? (
                     <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> {formatPrice(r.amount, CURRENCY)} reçus</span>
                   ) : (
@@ -110,19 +130,7 @@ function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
                   )}
                 </p>
               </div>
-              <div
-                className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-slate-100"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={r.invited_count}
-                aria-valuenow={done ? r.invited_count : progress}
-                aria-label={`${r.invited_count} invités ayant investi`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all ${done ? 'bg-accent-600' : 'bg-accent-400'}`}
-                  style={{ width: `${done ? 100 : Math.max((progress / r.invited_count) * 100, progress > 0 ? 4 : 0)}%` }}
-                />
-              </div>
+              <RewardTube percent={percent} label={`${r.invited_count} invités ayant investi`} />
             </li>
           );
         })}
