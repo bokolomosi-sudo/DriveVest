@@ -11,6 +11,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import { formatDate } from '../../lib/format';
+import { formatLocalPhone } from '../../lib/phoneAuth';
 import { adminListUsers, adminSetUserBlocked, type AdminUser } from '../../services/admin';
 import type { AppRole } from '../../types';
 
@@ -68,9 +69,9 @@ export default function AdminUsersPage() {
                 <tr key={u.id}>
                   <td>
                     <p className="font-medium text-slate-900">{u.full_name ?? '—'}</p>
-                    <p className="text-xs text-slate-500">{[u.city, u.country].filter(Boolean).join(', ')}</p>
+                    <p className="text-xs text-slate-500">{[u.city, u.province].filter(Boolean).join(', ')}</p>
                   </td>
-                  <td><p>{u.email}</p><p className="text-xs text-slate-500">{u.phone}</p></td>
+                  <td><p className="font-medium">{formatLocalPhone(u.phone)}</p>{u.email && !u.email.endsWith('@telephone.drivest.app') && <p className="text-xs text-slate-500">{u.email}</p>}</td>
                   <td><div className="flex flex-wrap gap-1">{u.roles.map((r) => <Badge key={r} tone={r === 'client' ? 'neutral' : 'info'}>{ROLE_LABELS[r]}</Badge>)}</div></td>
                   <td className="whitespace-nowrap text-xs">{formatDate(u.created_at)}</td>
                   <td>

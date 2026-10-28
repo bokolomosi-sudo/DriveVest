@@ -77,6 +77,20 @@ export async function updateMyProfile(userId: string, input: ProfileInput): Prom
   if (error) throw error;
 }
 
+/** Informations du membre : nom, province (liste de l'admin) et ville. */
+export async function completeMyProfile(params: { fullName: string; province: string; city: string }): Promise<void> {
+  const { error } = await db().rpc('complete_my_profile', {
+    p_full_name: params.fullName,
+    p_province: params.province,
+    p_city: params.city,
+  });
+  if (error) throw error;
+}
+
+export function isProfileComplete(profile: Profile | null): boolean {
+  return Boolean(profile?.full_name?.trim() && profile.province && profile.city?.trim());
+}
+
 // --- Notifications ---------------------------------------------------------
 
 export async function listMyNotifications(userId: string): Promise<AppNotification[]> {

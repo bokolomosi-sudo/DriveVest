@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { TeamRewardTiersEditor } from '../../components/admin/TeamRewardTiersEditor';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
@@ -22,10 +23,10 @@ const BOOL_KEYS = [
 type TextKey = (typeof TEXT_KEYS)[number];
 type NumberKey = (typeof NUMBER_KEYS)[number];
 type BoolKey = (typeof BOOL_KEYS)[number];
-type FormState = Record<TextKey | NumberKey, string> & Record<BoolKey, boolean> & { accepted_payment_methods: string };
+type FormState = Record<TextKey | NumberKey, string> & Record<BoolKey, boolean> & { accepted_payment_methods: string; provinces: string };
 
 function toForm(s: PlatformSettings): FormState {
-  const f = { accepted_payment_methods: s.accepted_payment_methods.join('\n') } as FormState;
+  const f = { accepted_payment_methods: s.accepted_payment_methods.join('\n'), provinces: (s.provinces ?? []).join('\n') } as FormState;
   for (const k of TEXT_KEYS) f[k] = (s[k] as string | null) ?? '';
   for (const k of NUMBER_KEYS) f[k] = String(s[k] ?? 0);
   for (const k of BOOL_KEYS) f[k] = Boolean(s[k]);
@@ -65,7 +66,7 @@ export default function AdminSettingsPage() {
   if (loading || (!form && !error)) return <LoadingState />;
   if (error || !form) return <ErrorState message={error ?? 'Paramètres indisponibles.'} onRetry={reload} />;
 
-  const text = (key: TextKey | NumberKey | 'accepted_payment_methods') => (e: { target: { value: string } }) =>
+  const text = (key: TextKey | NumberKey | 'accepted_payment_methods' | 'provinces') => (e: { target: { value: string } }) =>
     setForm((f) => (f ? { ...f, [key]: e.target.value } : f));
   const toggle = (key: BoolKey) => (v: boolean) => setForm((f) => (f ? { ...f, [key]: v } : f));
 
@@ -82,12 +83,15 @@ export default function AdminSettingsPage() {
       const v = Number(form[k]);
       if (!Number.isFinite(v) || v < 0) return setFormError('Les montants et pourcentages doivent être positifs.');
     }
+    const provinces = [...new Set(form.provinces.split('\n').map((p) => p.trim()).filter(Boolean))];
+    if (provinces.length === 0) return setFormError('Indiquez au moins une province.');
     setBusy(true);
     setFormError(null);
     try {
       const payload: Record<string, unknown> = {
         default_currency: currency,
         accepted_payment_methods: form.accepted_payment_methods.split('\n').map((m) => m.trim()).filter(Boolean),
+        provinces,
       };
       for (const k of TEXT_KEYS) if (k !== 'default_currency') payload[k] = form[k].trim() || null;
       for (const k of NUMBER_KEYS) payload[k] = Number(form[k]);
@@ -146,6 +150,12 @@ export default function AdminSettingsPage() {
           </div>
         </Section>
 
+        <Section title="Informations des membres" grid={false}>
+          <Field label="Provinces proposées" htmlFor="s-prov" hint="Une par ligne. Le membre choisit sa province dans cette liste à sa première connexion.">
+            <textarea id="s-prov" rows={6} className="input" value={form.provinces} onChange={text('provinces')} />
+          </Field>
+        </Section>
+
         <Section title="Coordonnées officielles">
           <Field label="E-mail" htmlFor="s-email"><input id="s-email" type="email" className="input" value={form.contact_email} onChange={text('contact_email')} /></Field>
           <Field label="Téléphone" htmlFor="s-phone"><input id="s-phone" type="tel" className="input" value={form.contact_phone} onChange={text('contact_phone')} /></Field>
@@ -162,6 +172,10 @@ export default function AdminSettingsPage() {
         {formError && <Alert tone="danger">{formError}</Alert>}
         <button className="btn-primary" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer les paramètres</button>
       </form>
+
+      <div className="mt-6">
+        <TeamRewardTiersEditor />
+      </div>
     </>
   );
 }

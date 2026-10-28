@@ -7,6 +7,7 @@ import {
   LifeBuoy,
   Lock,
   LogOut,
+  MapPin,
   MessageSquare,
   Receipt,
   Shield,
@@ -104,6 +105,12 @@ export default function DashboardPage() {
           <div className="min-w-0">
             <p className="truncate text-xl font-bold">{profile?.full_name || phone}</p>
             {profile?.full_name && <p className="text-sm text-night-200">{phone}</p>}
+            {(profile?.province || profile?.city) && (
+              <p className="flex items-center gap-1 text-sm text-night-200">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{[profile.city, profile.province].filter(Boolean).join(', ')}</span>
+              </p>
+            )}
             {code && (
               <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-night-200">
                 ID : <span className="font-mono font-semibold text-white">{code}</span>

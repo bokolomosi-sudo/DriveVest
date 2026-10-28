@@ -2,13 +2,22 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { isProfileComplete } from '../services/account';
 import { EmptyState, LoadingState } from './ui/Feedback';
 
 /**
  * Garde de navigation côté interface. Elle n'est PAS une mesure de sécurité :
  * l'accès réel aux données est contrôlé par RLS et les fonctions SQL.
  */
-export function ProtectedRoute({ children, requireAdmin = false }: { children: ReactNode; requireAdmin?: boolean }) {
+export function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  allowIncompleteProfile = false,
+}: {
+  children: ReactNode;
+  requireAdmin?: boolean;
+  allowIncompleteProfile?: boolean;
+}) {
   const { user, isAdmin, loading, profile } = useAuth();
   const location = useLocation();
 
@@ -29,6 +38,8 @@ export function ProtectedRoute({ children, requireAdmin = false }: { children: R
       </div>
     );
   }
+  // Première connexion : le membre indique d'abord son nom, sa province et sa ville
+  if (profile && !allowIncompleteProfile && !isProfileComplete(profile)) return <Navigate to="/bienvenue" replace />;
   if (requireAdmin && !isAdmin) {
     return (
       <div className="container-page py-16">

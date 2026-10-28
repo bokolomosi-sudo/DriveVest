@@ -43,6 +43,7 @@ export interface Profile {
   email: string | null;
   full_name: string | null;
   phone: string | null;
+  province: string | null;
   city: string | null;
   country: string | null;
   is_blocked: boolean;
@@ -76,6 +77,8 @@ export interface PlatformSettings {
   contact_phone: string | null;
   whatsapp_number: string | null;
   telegram_url: string | null;
+  /** Provinces proposées sur la page de bienvenue */
+  provinces: string[];
   whatsapp_group_url: string | null;
   contact_address: string | null;
   legal_notice: string | null;
@@ -349,6 +352,8 @@ export interface TeamMember {
   display_name: string;
   /** Numéro complet au niveau 1, masqué aux niveaux 2 et 3 */
   phone: string | null;
+  province: string | null;
+  city: string | null;
   joined_at: string;
   level: number;
   has_invested: boolean;
@@ -415,4 +420,21 @@ export interface DashboardStats {
   withdrawals_pending: number;
   kyc_pending: number;
   invested_by_currency: Record<string, number>;
+}
+
+/** Palier de récompense d'équipe vu par le membre */
+export interface TeamReward {
+  tier_id: string;
+  invited_count: number;
+  amount: number;
+  /** Invités directs ayant déjà acheté un produit */
+  invested_invitees: number;
+  granted_at: string | null;
+}
+
+export interface TeamRewardTier {
+  id: string;
+  invited_count: number;
+  amount: number;
+  is_active: boolean;
 }

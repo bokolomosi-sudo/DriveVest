@@ -59,6 +59,7 @@ for (const file of migrations) {
 }
 await db.exec(`update platform_settings set signup_bonus = 0 where id = 1`);
 
+const migratedMin = Number((await db.query(`select min_withdrawal from platform_settings where id = 1`)).rows[0].min_withdrawal);
 console.log('2. Inscription (trigger profil + rôle)');
 await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values
   ('${ADMIN}', 'admin@test.local', '{"full_name":"Admin Test"}'),
@@ -274,6 +275,44 @@ deep.rows.length === 3 && deep.rows[1].has_invested === false && deep.rows[2].ha
   ? ok('i_have_purchased correct')
   : fail('i_have_purchased', '');
 await expectError('has_purchased_product non exposée', () => as(R1, `select has_purchased_product($1)`, [B]), /permission denied/);
+
+console.log('16. Informations du membre et récompenses d\'équipe');
+migratedMin === 5000 ? ok('retrait minimum : 5 000 FC') : fail('minimum', migratedMin);
+await expectError('province hors liste refusée', () => as(R3, `select complete_my_profile('Marie Kabila', 'Paris', 'Goma')`), /province/);
+await expectError('nom vide refusé', () => as(R3, `select complete_my_profile(' ', 'Nord-Kivu', 'Goma')`), /nom/);
+await expectOk('profil complété', () => as(R3, `select complete_my_profile('Marie Kabila', 'Nord-Kivu', 'Goma')`));
+const prof16 = await db.query(`select full_name, province, city from profiles where id = $1`, [R3]);
+prof16.rows[0].province === 'Nord-Kivu' && prof16.rows[0].city === 'Goma' ? ok('province et ville enregistrées') : fail('profil', JSON.stringify(prof16.rows));
+
+await expectError('un client ne modifie pas les paliers', () => as(R3, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":99999}]')`), /administrateurs/);
+const grantsOf = async (uid) => (await db.query(`select invited_count, amount from team_reward_grants where user_id = $1 order by invited_count`, [uid])).rows;
+const r3Before = await bal(R3, 'CDF');
+await as(ADMIN, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":500},{"invited_count":2,"amount":1000}]')`);
+const r3After = await bal(R3, 'CDF');
+(await grantsOf(R3)).length === 1 && r3After - r3Before === 500
+  ? ok('palier déjà atteint crédité dès l\'enregistrement : +500 FC')
+  : fail('palier immédiat', JSON.stringify({ grants: await grantsOf(R3), diff: r3After - r3Before }));
+await as(ADMIN, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":500},{"invited_count":2,"amount":1000}]')`);
+(await grantsOf(R3)).length === 1 ? ok('pas de double versement') : fail('doublon', JSON.stringify(await grantsOf(R3)));
+
+const C = '00000000-0000-0000-0000-0000000000c1';
+await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('${C}', 'c@test.local', '{"referral_code":"${await codeOf(R3)}"}')`);
+const progress1 = await as(R3, `select invested_invitees from my_team_rewards() limit 1`);
+progress1.rows[0].invested_invitees === 1 ? ok('un inscrit sans achat ne compte pas') : fail('progression', JSON.stringify(progress1.rows));
+await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test récompense d''équipe')`, [C]);
+await as(C, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]);
+const g2 = await grantsOf(R3);
+g2.length === 2 && Number(g2[1].amount) === 1000 ? ok('2e invité qui achète : palier de 1 000 FC versé automatiquement') : fail('palier auto', JSON.stringify(g2));
+const rew = await as(R3, `select invited_count, granted_at from my_team_rewards()`);
+rew.rows.length === 2 && rew.rows.every((r) => r.granted_at) ? ok('paliers obtenus visibles par le membre') : fail('my_team_rewards', JSON.stringify(rew.rows));
+
+await db.exec(`update profiles set phone = '243971110002' where id = '${R3}'; update profiles set phone = '243971110003' where id = '${B}'`);
+const t1 = await as(R1, `select level, phone, province from my_team() order by level`);
+const lvl2 = t1.rows.find((r) => r.level === 2);
+const lvl3 = t1.rows.find((r) => r.level === 3 && r.phone);
+lvl2?.phone === '0971110002' && lvl2?.province === 'Nord-Kivu' && lvl3?.phone.includes('•••')
+  ? ok('numéro visible aux niveaux 1 et 2, masqué au niveau 3')
+  : fail('numéros équipe', JSON.stringify(t1.rows));
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

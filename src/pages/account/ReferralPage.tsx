@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, MessageCircle, Phone, Users } from 'lucide-react';
+import { CheckCircle2, Copy, Gift, MapPin, MessageCircle, Phone, Users } from 'lucide-react';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Badge } from '../../components/ui/Badge';
@@ -9,8 +9,8 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
-import { listMyCommissions, listMyTeam, referralLink } from '../../services/referral';
-import type { TeamMember } from '../../types';
+import { listMyCommissions, listMyTeam, listMyTeamRewards, referralLink } from '../../services/referral';
+import type { TeamMember, TeamReward } from '../../types';
 
 const LEVEL_TABS: { value: 0 | 1 | 2 | 3; label: string }[] = [
   { value: 0, label: 'Tous' },
@@ -58,6 +58,11 @@ function MemberCard({ member: m }: { member: TeamMember }) {
             <Badge tone={m.level === 1 ? 'success' : m.level === 2 ? 'info' : 'neutral'}>Niveau {m.level}</Badge>
           </div>
           {m.phone && <p className="font-mono text-sm text-slate-600">{m.phone}</p>}
+          {(m.city || m.province) && (
+            <p className="flex items-center gap-1 text-xs text-slate-500">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" /> {[m.city, m.province].filter(Boolean).join(', ')}
+            </p>
+          )}
           <p className="text-xs text-slate-500">Inscrit le {formatDate(m.joined_at)}</p>
         </div>
       </div>
@@ -76,11 +81,62 @@ function MemberCard({ member: m }: { member: TeamMember }) {
   );
 }
 
+/** Récompenses d'équipe : progression vers chaque palier (invités directs ayant acheté). */
+function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
+  if (rewards.length === 0) return null;
+  const invested = rewards[0].invested_invitees;
+  return (
+    <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+      <div className="flex items-center gap-2">
+        <Gift className="h-5 w-5 text-accent-600" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-slate-900">Récompenses d'équipe</h2>
+      </div>
+      <p className="mt-1 text-sm text-slate-500">
+        Seuls vos invités directs ayant déjà acheté au moins un produit comptent. La récompense est versée automatiquement sur votre compte Drivest.
+      </p>
+      <ul className="mt-4 space-y-4">
+        {rewards.map((r) => {
+          const done = Boolean(r.granted_at);
+          const progress = Math.min(invested, r.invited_count);
+          return (
+            <li key={r.tier_id}>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+                <p className="font-medium text-slate-900">{r.invited_count} invités ayant investi</p>
+                <p className={done ? 'font-semibold text-accent-700' : 'text-slate-500'}>
+                  {done ? (
+                    <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> {formatPrice(r.amount, CURRENCY)} reçus</span>
+                  ) : (
+                    <>{progress}/{r.invited_count} · {formatPrice(r.amount, CURRENCY)}</>
+                  )}
+                </p>
+              </div>
+              <div
+                className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-slate-100"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={r.invited_count}
+                aria-valuenow={done ? r.invited_count : progress}
+                aria-label={`${r.invited_count} invités ayant investi`}
+              >
+                <div
+                  className={`h-full rounded-full transition-all ${done ? 'bg-accent-600' : 'bg-accent-400'}`}
+                  style={{ width: `${done ? 100 : Math.max((progress / r.invited_count) * 100, progress > 0 ? 4 : 0)}%` }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export default function ReferralPage() {
   const { user, profile } = useAuth();
   const { settings } = useSettings();
   const { notify } = useToast();
   const team = useAsync(listMyTeam, []);
+  const rewards = useAsync(listMyTeamRewards, []);
   const [level, setLevel] = useState<0 | 1 | 2 | 3>(0);
   const commissions = useAsync(() => listMyCommissions(user!.id), [user!.id]);
   const code = profile?.referral_code ?? '';
@@ -163,6 +219,8 @@ export default function ReferralPage() {
         <Stat label="Niveau 2" value={String(countLevel(2))} />
         <Stat label="Commissions" value={formatPrice(totalCommissions, CURRENCY)} />
       </div>
+
+      {rewards.data && <TeamRewards rewards={rewards.data} />}
 
       <div className="mt-6 flex gap-1 overflow-x-auto rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-100" role="tablist" aria-label="Niveau">
         {LEVEL_TABS.map(({ value, label }) => (

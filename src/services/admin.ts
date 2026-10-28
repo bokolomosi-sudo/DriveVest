@@ -11,7 +11,9 @@ export type AdminUser = Profile & { roles: AppRole[] };
 
 export async function adminListUsers(search = ''): Promise<AdminUser[]> {
   let query = db().from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
-  const s = search.replace(/[%,()]/g, '').trim();
+  // Un numéro saisi au format local (097…) est cherché au format enregistré (24397…)
+  const raw = search.replace(/[%,()]/g, '').trim();
+  const s = /^0\d{3,}$/.test(raw) ? `243${raw.slice(1)}` : raw;
   if (s) query = query.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
   const { data, error } = await query;
   if (error) throw error;

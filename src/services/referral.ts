@@ -1,5 +1,5 @@
 import { db } from '../lib/supabase';
-import type { ReferralCommission, TeamMember } from '../types';
+import type { ReferralCommission, TeamMember, TeamReward, TeamRewardTier } from '../types';
 
 // --- Parrainage ------------------------------------------------------------
 
@@ -16,6 +16,29 @@ export async function listMyTeam(): Promise<TeamMember[]> {
     invested_amount: Number(m.invested_amount),
     commissions: Number(m.commissions),
   }));
+}
+
+/** Paliers de récompense d'équipe et progression du membre. */
+export async function listMyTeamRewards(): Promise<TeamReward[]> {
+  const { data, error } = await db().rpc('my_team_rewards');
+  if (error) throw error;
+  return ((data ?? []) as TeamReward[]).map((r) => ({ ...r, amount: Number(r.amount) }));
+}
+
+export async function adminListTeamRewardTiers(): Promise<TeamRewardTier[]> {
+  const { data, error } = await db()
+    .from('team_reward_tiers')
+    .select('id, invited_count, amount, is_active')
+    .eq('is_active', true)
+    .order('invited_count');
+  if (error) throw error;
+  return ((data ?? []) as TeamRewardTier[]).map((t) => ({ ...t, amount: Number(t.amount) }));
+}
+
+/** Remplace les paliers ; les membres qui atteignent déjà un palier sont crédités aussitôt. */
+export async function adminSetTeamRewardTiers(tiers: { invited_count: number; amount: number }[]): Promise<void> {
+  const { error } = await db().rpc('admin_set_team_reward_tiers', { p_tiers: tiers });
+  if (error) throw error;
 }
 
 export async function listMyCommissions(userId: string): Promise<ReferralCommission[]> {

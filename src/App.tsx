@@ -31,6 +31,7 @@ import VehicleDetailPage from './pages/VehicleDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import WelcomePage from './pages/auth/WelcomePage';
 
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
@@ -103,6 +104,8 @@ export default function App() {
       {/* Seules l'inscription et la connexion sont accessibles sans compte */}
       <Route path="inscription" element={<RegisterPage />} />
       <Route path="connexion" element={<LoginPage />} />
+      {/* Après la première connexion : nom, province et ville */}
+      <Route path="bienvenue" element={<ProtectedRoute allowIncompleteProfile><WelcomePage /></ProtectedRoute>} />
 
       <Route
         element={
