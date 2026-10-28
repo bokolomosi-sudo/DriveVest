@@ -1,5 +1,6 @@
 import { db } from '../lib/supabase';
-import type { Order, PlatformSettings, Transaction, TransactionStatus, WalletBalance } from '../types';
+import type {
+  DepositChannel, Order, PlatformSettings, Transaction, TransactionStatus, WalletBalance } from '../types';
 import { PAYMENT_PROOFS_BUCKET } from './orders';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -144,6 +145,39 @@ export async function payOrderWithWallet(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
+// --- Comptes de dépôt ---------------------------------------------------------
+
+export type DepositChannelInput = Omit<DepositChannel, 'id'>;
+
+export async function listDepositChannels(): Promise<DepositChannel[]> {
+  const { data, error } = await db()
+    .from('deposit_channels')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order')
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as DepositChannel[];
+}
+
+export async function adminListDepositChannels(): Promise<DepositChannel[]> {
+  const { data, error } = await db().from('deposit_channels').select('*').order('sort_order').order('created_at');
+  if (error) throw error;
+  return (data ?? []) as DepositChannel[];
+}
+
+export async function adminSaveDepositChannel(input: DepositChannelInput, id?: string): Promise<void> {
+  const { error } = id
+    ? await db().from('deposit_channels').update(input).eq('id', id)
+    : await db().from('deposit_channels').insert(input);
+  if (error) throw error;
+}
+
+export async function adminDeleteDepositChannel(id: string): Promise<void> {
+  const { error } = await db().from('deposit_channels').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Administration --------------------------------------------------------
 
 export async function adminListWalletOperations(type: 'deposit' | 'withdrawal', status: TransactionStatus | 'all'): Promise<Transaction[]> {
@@ -151,12 +185,29 @@ export async function adminListWalletOperations(type: 'deposit' | 'withdrawal', 
     .from('transactions')
     .select('*, customer:profiles(full_name, email, phone)')
     .eq('type', type)
+    .eq('wallet', true)
     .order('created_at', { ascending: status === 'pending' })
     .limit(200);
   if (status !== 'all') query = query.eq('status', status);
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as Transaction[];
+}
+
+/** Frais prélevés sur chaque retrait (pour afficher le montant demandé = net + frais). */
+export async function adminWithdrawalFees(withdrawalIds: string[]): Promise<Map<string, number>> {
+  const fees = new Map<string, number>();
+  if (withdrawalIds.length === 0) return fees;
+  const { data, error } = await db()
+    .from('transactions')
+    .select('amount, related_transaction_id')
+    .eq('type', 'fee')
+    .in('related_transaction_id', withdrawalIds);
+  if (error) throw error;
+  for (const f of (data ?? []) as { amount: number; related_transaction_id: string }[]) {
+    fees.set(f.related_transaction_id, (fees.get(f.related_transaction_id) ?? 0) + Number(f.amount));
+  }
+  return fees;
 }
 
 export async function adminReviewDeposit(id: string, approve: boolean, reason: string): Promise<void> {

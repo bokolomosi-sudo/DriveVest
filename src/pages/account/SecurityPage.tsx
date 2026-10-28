@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
 import { formatDate } from '../../lib/format';
-import { formatPhone } from '../../lib/phoneAuth';
+import { formatPhone, MIN_PASSWORD_LENGTH } from '../../lib/phoneAuth';
 import { updatePassword, validatePassword } from '../../services/account';
 
 export default function SecurityPage() {
@@ -53,7 +53,7 @@ export default function SecurityPage() {
 
         <form onSubmit={onSubmit} className="card space-y-4 p-5 sm:p-6">
           <h2 className="text-lg font-semibold">Changer de mot de passe</h2>
-          <Field label="Nouveau mot de passe" htmlFor="new-pw" hint="4 caractères minimum.">
+          <Field label="Nouveau mot de passe" htmlFor="new-pw" hint={`${MIN_PASSWORD_LENGTH} caractères minimum.`}>
             <input id="new-pw" type="password" autoComplete="new-password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Field label="Confirmer" htmlFor="confirm-pw">

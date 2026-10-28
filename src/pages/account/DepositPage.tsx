@@ -15,7 +15,7 @@ export default function DepositPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageMeta title="Dépôt" noindex />
-      <PageHeader title="Dépôt" />
+      <PageHeader title="Dépôt" description="Rechargez votre compte Drivest par Mobile Money." />
       <DepositForm userId={userId} onDone={history.reload} />
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Mes dépôts</h2>

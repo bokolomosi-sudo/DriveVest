@@ -1,17 +1,19 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Circle, Phone, Wallet } from 'lucide-react';
+import { CheckCircle2, Circle, Phone, Smartphone, Upload, Wallet } from 'lucide-react';
 import { Badge } from '../ui/Badge';
-import { Alert, EmptyState, Spinner } from '../ui/Feedback';
+import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
 import { PasswordField } from '../ui/PhoneField';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
+import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
 import { transactionStatus, type Tone } from '../../lib/labels';
 import { formatLocalPhone, parseLocalPhone } from '../../lib/phoneAuth';
 import {
+  listDepositChannels,
   requestDeposit,
   requestWithdrawal,
   setWithdrawalAccount,
@@ -22,32 +24,61 @@ import type { Transaction } from '../../types';
 
 // --- Dépôt --------------------------------------------------------------------
 
+function CopyButton({ value, label, solid }: { value: string; label: string; solid?: boolean }) {
+  const { notify } = useToast();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      notify('success', `${label} copié.`);
+    } catch {
+      notify('error', 'Copie impossible : sélectionnez le texte manuellement.');
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className={`btn shrink-0 rounded-xl px-4 py-2 ${solid ? 'bg-green-700 text-white hover:bg-green-800' : 'border border-green-700 bg-white text-green-800 hover:bg-green-50'}`}
+    >
+      Copier
+    </button>
+  );
+}
+
 export function DepositForm({ userId, onDone }: { userId: string; onDone: () => void }) {
   const { settings } = useSettings();
   const { notify } = useToast();
-  const methods = settings?.accepted_payment_methods ?? [];
+  const channels = useAsync(listDepositChannels, []);
+  const [channelId, setChannelId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState(methods[0] ?? '');
   const [reference, setReference] = useState('');
   const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const key = useRef(crypto.randomUUID());
 
+  const list = channels.data ?? [];
+  const channel = list.find((c) => c.id === channelId) ?? list[0] ?? null;
+  const value = Number(amount);
+  const minimum = Number(settings?.min_deposit ?? 0);
+  const validAmount = amount !== '' && Number.isFinite(value) && value > 0;
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (busy) return;
+    if (busy || !channel) return;
     setError(null);
-    const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0) return setError('Montant invalide.');
+    if (!validAmount) return setError('Indiquez le montant de votre dépôt.');
+    if (value < minimum) return setError(`Le dépôt minimum est de ${formatPrice(minimum, CURRENCY)}.`);
+    if (reference.trim().length < 3) return setError('Indiquez la référence de la transaction reçue par SMS.');
+    if (proof && proof.size > 5 * 1024 * 1024) return setError('La preuve de paiement ne doit pas dépasser 5 Mo.');
     setBusy(true);
     try {
-      await requestDeposit({ userId, amount: value, currency: CURRENCY, method, reference, proof, idempotencyKey: key.current });
+      await requestDeposit({ userId, amount: value, currency: CURRENCY, method: channel.name, reference: reference.trim(), proof, idempotencyKey: key.current });
       key.current = crypto.randomUUID();
       setAmount('');
       setReference('');
       setProof(null);
-      notify('success', 'Dépôt déclaré. Il sera crédité après vérification.');
+      notify('success', 'Dépôt envoyé. Il sera crédité après vérification.');
       onDone();
     } catch (err) {
       setError(toErrorMessage(err));
@@ -56,33 +87,112 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
     }
   };
 
+  if (channels.loading) return <LoadingState />;
+  if (channels.error) return <ErrorState message={channels.error} onRetry={channels.reload} />;
+  if (!channel) {
+    return <Alert tone="warning">Aucun compte de dépôt n'est disponible pour le moment. Contactez le service client.</Alert>;
+  }
+
   return (
-    <form onSubmit={onSubmit} className="card space-y-4 p-5">
-      {settings?.deposit_instructions ? (
-        <div className="whitespace-pre-line rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{settings.deposit_instructions}</div>
-      ) : (
-        <Alert tone="warning">Les instructions de dépôt n'ont pas encore été publiées. Contactez le service client avant tout versement.</Alert>
-      )}
-      <Field label="Montant (FC)" htmlFor="dep-amount" required hint={settings?.min_deposit ? `Minimum : ${formatPrice(Number(settings.min_deposit), CURRENCY)}` : undefined}>
-        <input id="dep-amount" type="number" min={0} step="1" inputMode="numeric" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </Field>
-      <Field label="Moyen de paiement" htmlFor="dep-method" required>
-        {methods.length > 0 ? (
-          <select id="dep-method" className="input" value={method} onChange={(e) => setMethod(e.target.value)}>
-            {methods.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-        ) : (
-          <input id="dep-method" className="input" value={method} onChange={(e) => setMethod(e.target.value)} />
+    <form onSubmit={onSubmit} className="space-y-5 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+      {/* Moyens de paiement */}
+      <div className="flex gap-2 overflow-x-auto rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="Moyen de paiement">
+        {list.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="tab"
+            aria-selected={c.id === channel.id}
+            onClick={() => setChannelId(c.id)}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${c.id === channel.id ? 'bg-white text-green-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            <Smartphone className="h-4 w-4 text-red-600" aria-hidden="true" />
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      <div>
+        <label htmlFor="dep-amount" className="label text-base">Montant (FC)</label>
+        <input
+          id="dep-amount"
+          type="number"
+          min={0}
+          step="1"
+          inputMode="numeric"
+          className="input h-14 rounded-2xl"
+          placeholder={minimum > 0 ? `Ex : 20000 (minimum ${formatPrice(minimum, CURRENCY)})` : 'Ex : 20000'}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+      </div>
+
+      {/* Instructions de paiement */}
+      <div className="space-y-4 rounded-2xl border border-green-200 bg-green-50/60 p-4">
+        <p className="text-base font-bold text-green-900">Effectuez le paiement vers {channel.name}</p>
+        <div>
+          <p className="text-sm text-slate-500">Montant total payable</p>
+          <p className="text-2xl font-extrabold text-green-900">{validAmount ? formatPrice(value, CURRENCY) : '— FC'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-slate-500">Compte {channel.name}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="break-all text-2xl font-extrabold tracking-wide text-green-900">{channel.account_number}</p>
+            <CopyButton value={channel.account_number} label="Numéro" solid />
+          </div>
+          {channel.account_name && <p className="text-sm text-slate-600">{channel.account_name}</p>}
+        </div>
+        {channel.ussd_code && (
+          <div>
+            <p className="text-sm text-slate-500">Code / procédure rapide</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-mono text-xl font-bold text-green-900">{channel.ussd_code}</p>
+              <CopyButton value={channel.ussd_code} label="Code" />
+            </div>
+          </div>
         )}
-      </Field>
-      <Field label="Référence de la transaction" htmlFor="dep-ref" required>
-        <input id="dep-ref" className="input" maxLength={120} value={reference} onChange={(e) => setReference(e.target.value)} />
-      </Field>
-      <Field label="Justificatif" htmlFor="dep-proof" hint="Facultatif — image ou PDF, 5 Mo maximum.">
-        <input id="dep-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="block w-full text-sm" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
-      </Field>
+        {(channel.instructions || settings?.deposit_instructions) && (
+          <div>
+            <p className="text-sm text-slate-500">Guide de paiement</p>
+            <p className="whitespace-pre-line text-sm text-slate-700">{channel.instructions || settings?.deposit_instructions}</p>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="dep-ref" className="label text-base">Référence de la transaction</label>
+        <input
+          id="dep-ref"
+          className="input h-14 rounded-2xl"
+          maxLength={120}
+          placeholder="Ex : MP240912.1234.A56789"
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <p className="label text-base">Preuve de paiement</p>
+        <label
+          htmlFor="dep-proof"
+          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 hover:border-green-400 hover:bg-green-50/40"
+        >
+          <Upload className="h-6 w-6 text-slate-400" aria-hidden="true" />
+          {proof ? <span className="break-all font-medium text-slate-800">{proof.name}</span> : <span>Capture d'écran ou photo (max 5 Mo)</span>}
+          <input
+            id="dep-proof"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            className="sr-only"
+            onChange={(e) => setProof(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      </div>
+
       {error && <Alert tone="danger">{error}</Alert>}
-      <button className="btn-primary w-full" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Déclarer le dépôt</button>
+      <button className="btn h-14 w-full rounded-2xl bg-green-700 text-base text-white hover:bg-green-800" disabled={busy}>
+        {busy && <Spinner className="h-4 w-4" />} Confirmer le dépôt
+      </button>
     </form>
   );
 }

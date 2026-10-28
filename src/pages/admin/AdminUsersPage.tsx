@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Users } from 'lucide-react';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
@@ -22,7 +23,9 @@ export default function AdminUsersPage() {
   const { notify } = useToast();
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
-  const { data, loading, error, reload } = useAsync(() => adminListUsers(query), [query]);
+  const { data: all, loading, error, reload } = useAsync(() => adminListUsers(query), [query]);
+  const [status, setStatus] = useState<'all' | 'active' | 'blocked'>('all');
+  const data = all?.filter((u) => status === 'all' || (status === 'blocked' ? u.is_blocked : !u.is_blocked));
   const [target, setTarget] = useState<AdminUser | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -49,11 +52,24 @@ export default function AdminUsersPage() {
   return (
     <>
       <PageMeta title="Utilisateurs — Administration" noindex />
-      <PageHeader title="Utilisateurs" description="Profils inscrits. Le blocage d'un compte exige un motif et est journalisé." />
+      <PageHeader title="Utilisateurs" description="Recherchez un membre, ouvrez sa fiche pour réinitialiser son mot de passe, ajuster son solde ou bloquer son compte." />
       <form className="relative mb-4" onSubmit={(e) => { e.preventDefault(); setQuery(search); }}>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input className="input pl-9" placeholder="Nom, e-mail ou téléphone" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Rechercher" />
+        <input className="input pl-9" placeholder="Nom ou téléphone (097…)" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Rechercher" />
       </form>
+      <div className="mb-4 flex gap-1 rounded-2xl bg-slate-100 p-1 sm:w-fit" role="tablist" aria-label="Statut">
+        {([['all', 'Tous'], ['active', 'Actifs'], ['blocked', 'Bloqués']] as const).map(([value, label]) => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={status === value}
+            onClick={() => setStatus(value)}
+            className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold sm:flex-none ${status === value ? 'bg-white text-slate-900 shadow' : 'text-slate-500'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {loading ? (
         <LoadingState />
       ) : error ? (
@@ -68,7 +84,7 @@ export default function AdminUsersPage() {
               {data.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <p className="font-medium text-slate-900">{u.full_name ?? '—'}</p>
+                    <Link to={`/admin/utilisateurs/${u.id}`} className="font-medium text-slate-900 underline-offset-2 hover:underline">{u.full_name ?? 'Nom non renseigné'}</Link>
                     <p className="text-xs text-slate-500">{[u.city, u.province].filter(Boolean).join(', ')}</p>
                   </td>
                   <td><p className="font-medium">{formatLocalPhone(u.phone)}</p>{u.email && !u.email.endsWith('@telephone.drivest.app') && <p className="text-xs text-slate-500">{u.email}</p>}</td>
@@ -82,6 +98,7 @@ export default function AdminUsersPage() {
                     )}
                   </td>
                   <td>
+                    <Link to={`/admin/utilisateurs/${u.id}`} className="btn-secondary btn-sm mr-1">Voir</Link>
                     {u.id !== me?.id && (
                       <button className={u.is_blocked ? 'btn-secondary btn-sm' : 'btn-ghost btn-sm text-red-700'} onClick={() => { setTarget(u); setReason(''); setActionError(null); }}>
                         {u.is_blocked ? 'Réactiver' : 'Bloquer'}

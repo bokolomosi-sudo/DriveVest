@@ -11,7 +11,14 @@ const db = new PGlite();
 const STUBS = `
 create role anon nologin; create role authenticated nologin; create role supabase_auth_admin nologin;
 create schema auth; create schema storage;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}',
+  encrypted_password text, updated_at timestamptz);
+create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid);
+create table auth.refresh_tokens (id bigserial primary key, user_id text);
+-- pgcrypto vit dans le schéma « extensions » sur Supabase : simple imitation pour les tests
+create schema extensions;
+create function extensions.gen_salt(text) returns text language sql as $$ select 'sel' $$;
+create function extensions.crypt(text, text) returns text language sql as $$ select md5($1 || $2) $$;
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
 create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
@@ -313,6 +320,36 @@ const lvl3 = t1.rows.find((r) => r.level === 3 && r.phone);
 lvl2?.phone === '0971110002' && lvl2?.province === 'Nord-Kivu' && lvl3?.phone.includes('•••')
   ? ok('numéro visible aux niveaux 1 et 2, masqué au niveau 3')
   : fail('numéros équipe', JSON.stringify(t1.rows));
+
+console.log('17. Outils d\'administration');
+await expectError('un client ne crée pas de compte de dépôt', () => as(R3, `insert into deposit_channels (name, account_number) values ('Airtel Money', '0990000000')`), /row-level security|permission denied/);
+await expectOk('l\'admin crée un compte de dépôt', () => as(ADMIN, `insert into deposit_channels (name, account_number, account_name, ussd_code) values ('Airtel Money', '0990000000', 'Drivest', '*501#')`));
+await as(ADMIN, `insert into deposit_channels (name, account_number, is_active) values ('Ancien compte', '0990000001', false)`);
+const seen = await as(R3, `select name from deposit_channels`);
+seen.rows.length === 1 && seen.rows[0].name === 'Airtel Money' ? ok('le client ne voit que les comptes actifs') : fail('comptes de dépôt', JSON.stringify(seen.rows));
+
+await db.exec(`update auth.users set encrypted_password = 'ancien' where id = '${R3}'; insert into auth.sessions (user_id) values ('${R3}'); insert into auth.refresh_tokens (user_id) values ('${R3}')`);
+await expectError('un client ne réinitialise pas un mot de passe', () => as(R3, `select admin_reset_user_password($1, '123456')`, [R2]), /administrateurs/);
+await expectError('mot de passe provisoire trop court', () => as(ADMIN, `select admin_reset_user_password($1, '12345')`, [R3]), /6 caractères/);
+await as(ADMIN, `select admin_reset_user_password($1, 'nouveau1')`, [R3]);
+const pw = await db.query(`select encrypted_password from auth.users where id = $1`, [R3]);
+const sessions = await db.query(`select (select count(*) from auth.sessions where user_id = $1)::int + (select count(*) from auth.refresh_tokens where user_id = $1::text)::int as n`, [R3]);
+pw.rows[0].encrypted_password !== 'ancien' && sessions.rows[0].n === 0
+  ? ok('mot de passe réinitialisé, sessions fermées')
+  : fail('réinitialisation', JSON.stringify({ pw: pw.rows[0], sessions: sessions.rows[0] }));
+
+await expectError('réinitialisation du portefeuille sans motif', () => as(ADMIN, `select admin_reset_withdrawal_account($1, ' ')`, [B]), /motif/);
+await as(ADMIN, `select admin_reset_withdrawal_account($1, 'Mot de passe de retrait oublié')`, [B]);
+(await as(B, `select * from get_my_withdrawal_account()`)).rows.length === 0
+  ? ok('portefeuille de retrait réinitialisé : le membre peut le reconfigurer')
+  : fail('portefeuille', 'toujours présent');
+
+const ov = await as(ADMIN, `select admin_user_overview($1) as o`, [R3]);
+const o = ov.rows[0].o;
+o.team_level1 === 2 && o.invested_invitees === 2 && Number(o.total_rewards) === 1500 && o.sponsor?.id === R2
+  ? ok('fiche membre : équipe, récompenses et parrain')
+  : fail('fiche membre', JSON.stringify(o));
+await expectError('fiche membre réservée à l\'admin', () => as(R3, `select admin_user_overview($1)`, [R3]), /administrateurs/);
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

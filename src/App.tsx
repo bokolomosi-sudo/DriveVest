@@ -58,6 +58,7 @@ const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage'));
 const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage'));
 const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
 const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
@@ -89,7 +90,7 @@ const ADMIN_NAV: SideNavItem[] = [
   { to: '/admin/categories', label: 'Catégories', icon: Tags },
   { to: '/admin/commandes', label: 'Commandes', icon: ShoppingBag },
   { to: '/admin/finances', label: 'Paiements', icon: CreditCard },
-  { to: '/admin/portefeuilles', label: 'Portefeuilles', icon: Wallet },
+  { to: '/admin/portefeuilles', label: 'Dépôts et retraits', icon: Wallet },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { to: '/admin/support', label: 'Service client', icon: LifeBuoy },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone },
@@ -162,6 +163,7 @@ export default function App() {
           <Route path="commandes/:id" element={<AdminOrderDetailPage />} />
           <Route path="finances" element={<AdminFinancePage />} />
           <Route path="utilisateurs" element={<AdminUsersPage />} />
+          <Route path="utilisateurs/:id" element={<AdminUserDetailPage />} />
           <Route path="support" element={<AdminSupportPage />} />
           <Route path="annonces" element={<AdminAnnouncementsPage />} />
           <Route path="audit" element={<AdminAuditPage />} />

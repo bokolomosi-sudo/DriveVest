@@ -438,3 +438,35 @@ export interface TeamRewardTier {
   amount: number;
   is_active: boolean;
 }
+
+/** Compte sur lequel le client envoie son dépôt (Airtel Money…) */
+export interface DepositChannel {
+  id: string;
+  name: string;
+  account_number: string;
+  account_name: string | null;
+  ussd_code: string | null;
+  instructions: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
+
+/** Fiche complète d'un membre (administration) */
+export interface AdminUserOverview {
+  balance: number;
+  sponsor: { id: string; full_name: string | null; phone: string | null } | null;
+  withdrawal_account: {
+    holder_name: string;
+    airtel_number: string;
+    failed_attempts: number;
+    locked_until: string | null;
+    created_at: string;
+  } | null;
+  team_level1: number;
+  team_level2: number;
+  invested_invitees: number;
+  total_deposits: number;
+  total_withdrawals: number;
+  total_commissions: number;
+  total_rewards: number;
+}

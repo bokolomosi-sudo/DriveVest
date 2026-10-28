@@ -1,5 +1,5 @@
 import { db } from '../lib/supabase';
-import type { AppRole, AuditLog, DashboardStats, Profile } from '../types';
+import type { AdminUserOverview, AppRole, AuditLog, DashboardStats, Profile } from '../types';
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const { data, error } = await db().rpc('admin_dashboard_stats');
@@ -30,6 +30,41 @@ export async function adminListUsers(search = ''): Promise<AdminUser[]> {
     byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r.role]);
   }
   return profiles.map((p) => ({ ...p, roles: byUser.get(p.id) ?? [] }));
+}
+
+export async function adminGetUser(userId: string): Promise<AdminUser | null> {
+  const { data, error } = await db().from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const roles = await db().from('user_roles').select('role').eq('user_id', userId);
+  if (roles.error) throw roles.error;
+  return { ...(data as Profile), roles: (roles.data ?? []).map((r: { role: AppRole }) => r.role) };
+}
+
+export async function adminUserOverview(userId: string): Promise<AdminUserOverview> {
+  const { data, error } = await db().rpc('admin_user_overview', { p_user_id: userId });
+  if (error) throw error;
+  const o = data as AdminUserOverview;
+  return {
+    ...o,
+    balance: Number(o.balance),
+    total_deposits: Number(o.total_deposits),
+    total_withdrawals: Number(o.total_withdrawals),
+    total_commissions: Number(o.total_commissions),
+    total_rewards: Number(o.total_rewards),
+  };
+}
+
+/** Mot de passe oublié : l'admin définit un mot de passe provisoire (sessions fermées). */
+export async function adminResetUserPassword(userId: string, password: string): Promise<void> {
+  const { error } = await db().rpc('admin_reset_user_password', { p_user_id: userId, p_new_password: password });
+  if (error) throw error;
+}
+
+/** Supprime le numéro Airtel et le mot de passe de retrait : le membre les configure de nouveau. */
+export async function adminResetWithdrawalAccount(userId: string, reason: string): Promise<void> {
+  const { error } = await db().rpc('admin_reset_withdrawal_account', { p_user_id: userId, p_reason: reason });
+  if (error) throw error;
 }
 
 export async function adminSetUserBlocked(userId: string, blocked: boolean, reason: string): Promise<void> {

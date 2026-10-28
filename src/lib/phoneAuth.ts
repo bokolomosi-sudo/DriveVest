@@ -8,7 +8,7 @@
  */
 
 const PASSWORD_SUFFIX = '::drivest';
-export const MIN_PASSWORD_LENGTH = 4;
+export const MIN_PASSWORD_LENGTH = 6;
 
 /** Indicatif de la RDC, seul pays accepté. */
 export const DEFAULT_COUNTRY_CODE = '243';
