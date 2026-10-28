@@ -1,0 +1,173 @@
+import { lazy } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Bell,
+  Car,
+  CreditCard,
+  LayoutDashboard,
+  LifeBuoy,
+  Megaphone,
+  Receipt,
+  ScrollText,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+  Tags,
+  User,
+  UserPlus,
+  Users,
+  Wallet,
+} from 'lucide-react';
+import type { PlatformSettings } from './types';
+import { useSettings } from './context/SettingsContext';
+import { PublicLayout } from './components/layout/PublicLayout';
+import { SideNavLayout, type SideNavItem } from './components/layout/SideNavLayout';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import HomePage from './pages/HomePage';
+import ProductsPage from './pages/ProductsPage';
+import VehicleDetailPage from './pages/VehicleDetailPage';
+import NotFoundPage from './pages/NotFoundPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
+
+const DashboardPage = lazy(() => import('./pages/account/DashboardPage'));
+const MyProductsPage = lazy(() => import('./pages/account/MyProductsPage'));
+const OrderDetailPage = lazy(() => import('./pages/account/OrderDetailPage'));
+const NotificationsPage = lazy(() => import('./pages/account/NotificationsPage'));
+const TransactionsPage = lazy(() => import('./pages/account/TransactionsPage'));
+const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
+const SecurityPage = lazy(() => import('./pages/account/SecurityPage'));
+const WalletPage = lazy(() => import('./pages/account/WalletPage'));
+const DepositPage = lazy(() => import('./pages/account/DepositPage'));
+const WithdrawalPage = lazy(() => import('./pages/account/WithdrawalPage'));
+const ReferralPage = lazy(() => import('./pages/account/ReferralPage'));
+
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminVehiclesPage = lazy(() => import('./pages/admin/AdminVehiclesPage'));
+const AdminVehicleFormPage = lazy(() => import('./pages/admin/AdminVehicleFormPage'));
+const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage'));
+const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
+const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'));
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
+const AdminWalletPage = lazy(() => import('./pages/admin/AdminWalletPage'));
+
+function accountNav(s: PlatformSettings | null): SideNavItem[] {
+  return [
+    { to: '/compte', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+    { to: '/compte/produits', label: 'Mes produits', icon: ShoppingBag },
+    ...(s?.feature_wallet
+      ? [
+          { to: '/compte/depot', label: 'Dépôt', icon: ArrowDownToLine },
+          { to: '/compte/retrait', label: 'Retrait', icon: ArrowUpFromLine },
+          { to: '/compte/portefeuille', label: 'Portefeuille', icon: Wallet },
+        ]
+      : []),
+    ...(s?.feature_referral ? [{ to: '/compte/parrainage', label: 'Parrainage', icon: UserPlus }] : []),
+    { to: '/compte/notifications', label: 'Notifications', icon: Bell },
+    { to: '/compte/transactions', label: 'Transactions', icon: Receipt },
+    { to: '/compte/profil', label: 'Profil', icon: User },
+    { to: '/compte/securite', label: 'Sécurité', icon: ShieldCheck },
+  ];
+}
+
+const ADMIN_NAV: SideNavItem[] = [
+  { to: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+  { to: '/admin/vehicules', label: 'Véhicules', icon: Car },
+  { to: '/admin/categories', label: 'Catégories', icon: Tags },
+  { to: '/admin/commandes', label: 'Commandes', icon: ShoppingBag },
+  { to: '/admin/finances', label: 'Paiements', icon: CreditCard },
+  { to: '/admin/portefeuilles', label: 'Portefeuilles', icon: Wallet },
+  { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
+  { to: '/admin/support', label: 'Service client', icon: LifeBuoy },
+  { to: '/admin/annonces', label: 'Annonces', icon: Megaphone },
+  { to: '/admin/audit', label: "Journal d'audit", icon: ScrollText },
+  { to: '/admin/parametres', label: 'Paramètres', icon: Settings },
+];
+
+export default function App() {
+  const { settings } = useSettings();
+  return (
+    <Routes>
+      {/* Seules l'inscription et la connexion sont accessibles sans compte */}
+      <Route path="inscription" element={<RegisterPage />} />
+      <Route path="connexion" element={<LoginPage />} />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <PublicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<HomePage />} />
+        <Route path="produits" element={<ProductsPage />} />
+        <Route path="catalogue" element={<Navigate to="/produits" replace />} />
+        <Route path="vehicules/:id" element={<VehicleDetailPage />} />
+        <Route path="actualites" element={<AnnouncementsPage />} />
+        <Route path="messages" element={<MessagesPage />} />
+        <Route path="service-client" element={<SupportPage />} />
+        <Route path="mentions-legales" element={<LegalPage />} />
+
+        <Route
+          path="compte"
+          element={
+            <ProtectedRoute>
+              <SideNavLayout title="Mon espace" items={accountNav(settings)} hideNavOnMobile />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="produits" element={<MyProductsPage />} />
+          <Route path="commandes" element={<Navigate to="/compte/produits" replace />} />
+          <Route path="commandes/:id" element={<OrderDetailPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="profil" element={<ProfilePage />} />
+          <Route path="securite" element={<SecurityPage />} />
+          <Route path="portefeuille" element={<WalletPage />} />
+          <Route path="depot" element={<DepositPage />} />
+          <Route path="retrait" element={<WithdrawalPage />} />
+          <Route path="parrainage" element={<ReferralPage />} />
+        </Route>
+
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute requireAdmin>
+              <SideNavLayout title="Administration" items={ADMIN_NAV} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="vehicules" element={<AdminVehiclesPage />} />
+          <Route path="vehicules/nouveau" element={<AdminVehicleFormPage />} />
+          <Route path="vehicules/:id" element={<AdminVehicleFormPage />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="commandes" element={<AdminOrdersPage />} />
+          <Route path="commandes/:id" element={<AdminOrderDetailPage />} />
+          <Route path="finances" element={<AdminFinancePage />} />
+          <Route path="utilisateurs" element={<AdminUsersPage />} />
+          <Route path="support" element={<AdminSupportPage />} />
+          <Route path="annonces" element={<AdminAnnouncementsPage />} />
+          <Route path="audit" element={<AdminAuditPage />} />
+          <Route path="parametres" element={<AdminSettingsPage />} />
+          <Route path="portefeuilles" element={<AdminWalletPage />} />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  );
+}
