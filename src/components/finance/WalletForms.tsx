@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { Phone, Wallet } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, Circle, Phone, Wallet } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
@@ -8,7 +9,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
 import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
-import { transactionStatus } from '../../lib/labels';
+import { transactionStatus, type Tone } from '../../lib/labels';
 import { formatLocalPhone, parseLocalPhone } from '../../lib/phoneAuth';
 import {
   requestDeposit,
@@ -167,32 +168,82 @@ export function WithdrawalAccountCard({ account }: { account: WithdrawalAccount 
 
 // --- Retrait ------------------------------------------------------------------
 
-export function WithdrawalForm({ account, available, onDone }: { account: WithdrawalAccount; available: number; onDone: () => void }) {
+/** Conditions de retrait, cochées lorsqu'elles sont remplies. */
+export function WithdrawalConditions({ purchased, hasAccount }: { purchased: boolean; hasAccount: boolean }) {
+  const { settings } = useSettings();
+  const minimum = Number(settings?.min_withdrawal ?? 0);
+  const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
+  const items: { label: string; met?: boolean }[] = [
+    { label: 'Avoir acheté au moins un produit', met: purchased },
+    ...(minimum > 0 ? [{ label: `Montant minimum : ${formatPrice(minimum, CURRENCY)}` }] : []),
+    { label: 'Mobile Money et mot de passe de retrait configurés', met: hasAccount },
+    ...(feePercent > 0 ? [{ label: `Frais uniques de ${feePercent} % appliqués à chaque retrait` }] : []),
+    { label: 'Retrait définitif une fois soumis' },
+  ];
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+      <p className="font-semibold text-slate-900">Conditions</p>
+      <ul className="mt-2 space-y-1.5 text-sm text-slate-600">
+        {items.map(({ label, met }) => (
+          <li key={label} className="flex items-start gap-2">
+            {met === undefined ? (
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true" />
+            ) : met ? (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-600" aria-label="Rempli" />
+            ) : (
+              <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" aria-label="Non rempli" />
+            )}
+            <span>{label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function WithdrawalForm({
+  account,
+  available,
+  purchased,
+  onDone,
+}: {
+  account: WithdrawalAccount;
+  available: number;
+  purchased: boolean;
+  onDone: () => void;
+}) {
   const { settings } = useSettings();
   const { notify } = useToast();
   const [amount, setAmount] = useState('');
   const [password, setPassword] = useState('');
+  const [step, setStep] = useState<'amount' | 'confirm'>('amount');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const key = useRef(crypto.randomUUID());
 
   const value = Number(amount);
   const minimum = Number(settings?.min_withdrawal ?? 0);
+  const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
   const fee = withdrawalFee(value, settings);
   // Vérifications en temps réel, pendant la saisie
   const liveError =
     amount === '' || !Number.isFinite(value) || value <= 0
       ? null
-      : value + fee > available
+      : value > available
         ? `Solde insuffisant : vous ne pouvez pas retirer plus que votre solde (${formatPrice(available, CURRENCY)}).`
         : value < minimum
           ? `Le montant minimum de retrait est de ${formatPrice(minimum, CURRENCY)}.`
           : null;
-  const canSubmit = amount !== '' && value > 0 && !liveError && password.length > 0;
+  const amountValid = purchased && amount !== '' && value > 0 && !liveError;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (busy || !canSubmit) return;
+    if (busy) return;
+    if (step === 'amount') {
+      if (amountValid) setStep('confirm');
+      return;
+    }
+    if (!password) return setError('Saisissez votre mot de passe de retrait.');
     setError(null);
     setBusy(true);
     try {
@@ -200,6 +251,7 @@ export function WithdrawalForm({ account, available, onDone }: { account: Withdr
       key.current = crypto.randomUUID();
       setAmount('');
       setPassword('');
+      setStep('amount');
       notify('success', 'Demande de retrait envoyée : traitement bancaire en cours.');
       onDone();
     } catch (err) {
@@ -211,43 +263,102 @@ export function WithdrawalForm({ account, available, onDone }: { account: Withdr
   };
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-4 p-5">
-      <div className="rounded-lg bg-slate-50 p-3 text-sm">
-        <p className="text-slate-500">Vers Airtel Money</p>
-        <p className="font-semibold">{account.holder_name} · {formatLocalPhone(account.airtel_number)}</p>
-      </div>
-      <Field label="Montant (FC)" htmlFor="wd-amount" required hint={minimum > 0 ? `Minimum : ${formatPrice(minimum, CURRENCY)}` : undefined}>
-        <input
-          id="wd-amount"
-          type="number"
-          min={0}
-          step="1"
-          inputMode="numeric"
-          aria-invalid={Boolean(liveError)}
-          className={`input ${liveError ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30' : ''}`}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-      </Field>
-      {liveError && <p className="-mt-2 text-sm font-medium text-red-600" role="alert">{liveError}</p>}
-      {value > 0 && fee > 0 && !liveError && (
-        <dl className="space-y-1 rounded-lg bg-slate-50 p-3 text-sm">
-          <div className="flex justify-between"><dt className="text-slate-500">Frais de retrait</dt><dd>{formatPrice(fee, CURRENCY)}</dd></div>
-          <div className="flex justify-between font-semibold"><dt>Total débité</dt><dd>{formatPrice(value + fee, CURRENCY)}</dd></div>
-        </dl>
+    <form onSubmit={onSubmit} className="space-y-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+      <p className="rounded-xl bg-slate-100 px-3 py-2.5 text-center text-sm font-semibold text-slate-600">
+        Solde disponible : {formatPrice(available, CURRENCY)}
+      </p>
+
+      {step === 'amount' ? (
+        <>
+          {!purchased && (
+            <Alert tone="warning">
+              Achetez au moins un produit pour pouvoir retirer.{' '}
+              <Link to="/produits" className="font-semibold underline">Voir les produits</Link>
+            </Alert>
+          )}
+          <div>
+            <label htmlFor="wd-amount" className="label text-base">Montant à retirer (FC)</label>
+            <input
+              id="wd-amount"
+              type="number"
+              min={0}
+              step="1"
+              inputMode="numeric"
+              disabled={!purchased}
+              placeholder={minimum > 0 ? `Minimum ${formatPrice(minimum, CURRENCY)}` : 'Montant'}
+              aria-invalid={Boolean(liveError)}
+              className={`input h-14 rounded-2xl ${liveError ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30' : ''}`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          {liveError && <p className="-mt-2 text-sm font-medium text-red-600" role="alert">{liveError}</p>}
+          {amountValid && fee > 0 && (
+            <p className="-mt-2 text-sm text-slate-500">
+              Vous recevrez <strong className="text-slate-900">{formatPrice(value - fee, CURRENCY)}</strong> (frais {feePercent} % : {formatPrice(fee, CURRENCY)})
+            </p>
+          )}
+          <button className="btn-primary h-14 w-full rounded-2xl text-base" disabled={!amountValid}>Continuer</button>
+        </>
+      ) : (
+        <>
+          <dl className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Montant demandé</dt><dd className="font-semibold">{formatPrice(value, CURRENCY)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Frais ({feePercent} %)</dt><dd>−{formatPrice(fee, CURRENCY)}</dd></div>
+            <div className="flex justify-between gap-3 border-t border-slate-200 pt-2 text-base font-bold"><dt>Vous recevez</dt><dd className="text-accent-700">{formatPrice(value - fee, CURRENCY)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Vers</dt><dd className="text-right font-medium">{account.holder_name} · {formatLocalPhone(account.airtel_number)}</dd></div>
+          </dl>
+          <Field label="Mot de passe de retrait" htmlFor="wd-password" required>
+            <PasswordField id="wd-password" value={password} onChange={setPassword} placeholder="Mot de passe de retrait" autoComplete="current-password" autoFocus />
+          </Field>
+          <p className="text-xs text-slate-500">Une fois soumis, le retrait ne peut plus être annulé.</p>
+          {error && <Alert tone="danger">{error}</Alert>}
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" className="btn-secondary h-12 rounded-2xl" disabled={busy} onClick={() => { setStep('amount'); setError(null); }}>Retour</button>
+            <button className="btn-primary h-12 rounded-2xl" disabled={busy || !password}>{busy && <Spinner className="h-4 w-4" />} Confirmer</button>
+          </div>
+        </>
       )}
-      <Field label="Mot de passe de retrait" htmlFor="wd-password" required>
-        <PasswordField id="wd-password" value={password} onChange={setPassword} placeholder="Mot de passe de retrait" autoComplete="current-password" />
-      </Field>
-      {error && <Alert tone="danger">{error}</Alert>}
-      <button className="btn-dark w-full" disabled={busy || !canSubmit}>{busy && <Spinner className="h-4 w-4" />} Soumettre le retrait</button>
     </form>
+  );
+}
+
+const WITHDRAWAL_STATUS: Record<Transaction['status'], { label: string; tone: Tone }> = {
+  pending: { label: 'Traitement bancaire', tone: 'warning' },
+  confirmed: { label: 'Payé', tone: 'success' },
+  rejected: { label: 'Refusé', tone: 'danger' },
+  cancelled: { label: 'Annulé', tone: 'neutral' },
+};
+
+/** Historique des retraits : montant demandé, net reçu (après frais) et statut. */
+export function WithdrawalHistory({ transactions }: { transactions: Transaction[] }) {
+  const withdrawals = transactions.filter((t) => t.type === 'withdrawal');
+  if (withdrawals.length === 0) return <EmptyState icon={<Wallet className="h-10 w-10" />} title="Aucun retrait" />;
+  const feeOf = (id: string) =>
+    transactions.filter((t) => t.type === 'fee' && t.related_transaction_id === id).reduce((sum, t) => sum + Number(t.amount), 0);
+  return (
+    <ul className="space-y-2">
+      {withdrawals.map((t) => {
+        const net = Number(t.amount);
+        const status = WITHDRAWAL_STATUS[t.status];
+        return (
+          <li key={t.id} className="flex items-start justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+            <div className="min-w-0">
+              <p className="text-base font-bold text-slate-900">{formatPrice(net + feeOf(t.id), t.currency)}</p>
+              <p className="text-sm text-slate-500">Net {formatPrice(net, t.currency)} · {formatDate(t.created_at, true)}</p>
+              {t.rejection_reason && <p className="mt-1 text-xs text-red-700">Motif : {t.rejection_reason}</p>}
+            </div>
+            <Badge tone={status.tone}>{status.label}</Badge>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
 // --- Historique ---------------------------------------------------------------
 
-export function OperationsList({ operations, emptyTitle, onCancel }: { operations: Transaction[]; emptyTitle: string; onCancel?: (id: string) => void }) {
+export function OperationsList({ operations, emptyTitle }: { operations: Transaction[]; emptyTitle: string }) {
   if (operations.length === 0) return <EmptyState icon={<Wallet className="h-10 w-10" />} title={emptyTitle} />;
   return (
     <ul className="space-y-2">
@@ -262,12 +373,7 @@ export function OperationsList({ operations, emptyTitle, onCancel }: { operation
             {t.type === 'deposit' && t.external_reference && <p className="font-mono text-xs text-slate-500">Réf. {t.external_reference}</p>}
             {t.rejection_reason && <p className="mt-1 text-xs text-red-700">Motif : {t.rejection_reason}</p>}
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <Badge tone={transactionStatus(t).tone}>{transactionStatus(t).label}</Badge>
-            {onCancel && t.type === 'withdrawal' && t.status === 'pending' && (
-              <button className="btn-ghost btn-sm" onClick={() => onCancel(t.id)}>Annuler</button>
-            )}
-          </div>
+          <Badge tone={transactionStatus(t).tone}>{transactionStatus(t).label}</Badge>
         </li>
       ))}
     </ul>

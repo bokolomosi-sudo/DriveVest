@@ -35,6 +35,16 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      // Barre de chargement réseau (va-et-vient en haut de l'écran)
+      keyframes: {
+        'network-bar': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(300%)' },
+        },
+      },
+      animation: {
+        'network-bar': 'network-bar 1.1s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

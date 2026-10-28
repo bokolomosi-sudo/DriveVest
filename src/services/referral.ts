@@ -1,5 +1,5 @@
 import { db } from '../lib/supabase';
-import type { ReferralCommission, ReferralMember } from '../types';
+import type { ReferralCommission, TeamMember } from '../types';
 
 // --- Parrainage ------------------------------------------------------------
 
@@ -7,10 +7,15 @@ export function referralLink(code: string): string {
   return `${window.location.origin}/inscription?ref=${encodeURIComponent(code)}`;
 }
 
-export async function listMyReferrals(): Promise<ReferralMember[]> {
-  const { data, error } = await db().rpc('my_referrals');
+/** Équipe sur 3 niveaux, avec le statut d'achat de chaque invité. */
+export async function listMyTeam(): Promise<TeamMember[]> {
+  const { data, error } = await db().rpc('my_team');
   if (error) throw error;
-  return ((data ?? []) as ReferralMember[]).map((m) => ({ ...m, commissions: Number(m.commissions) }));
+  return ((data ?? []) as TeamMember[]).map((m) => ({
+    ...m,
+    invested_amount: Number(m.invested_amount),
+    commissions: Number(m.commissions),
+  }));
 }
 
 export async function listMyCommissions(userId: string): Promise<ReferralCommission[]> {

@@ -74,7 +74,7 @@ function accountNav(s: PlatformSettings | null): SideNavItem[] {
           { to: '/compte/portefeuille', label: 'Portefeuille', icon: Wallet },
         ]
       : []),
-    ...(s?.feature_referral ? [{ to: '/compte/parrainage', label: 'Parrainage', icon: UserPlus }] : []),
+    ...(s?.feature_referral ? [{ to: '/compte/parrainage', label: 'Mon équipe', icon: UserPlus }] : []),
     { to: '/compte/notifications', label: 'Notifications', icon: Bell },
     { to: '/compte/transactions', label: 'Transactions', icon: Receipt },
     { to: '/compte/profil', label: 'Profil', icon: User },

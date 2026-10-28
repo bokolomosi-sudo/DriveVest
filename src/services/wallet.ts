@@ -83,8 +83,9 @@ export async function requestDeposit(params: {
 
 export function withdrawalFee(amount: number, settings: PlatformSettings | null): number {
   if (!settings || !Number.isFinite(amount) || amount <= 0) return 0;
+  // Frais prélevés sur le montant demandé (le membre reçoit montant − frais)
   const fee = (amount * Number(settings.withdrawal_fee_percent)) / 100 + Number(settings.withdrawal_fee_fixed);
-  return Math.round(fee * 100) / 100;
+  return Math.min(Math.round(fee * 100) / 100, amount);
 }
 
 export interface WithdrawalAccount {
@@ -121,9 +122,11 @@ export async function requestWithdrawal(params: { amount: number; password: stri
   return tx;
 }
 
-export async function cancelMyWithdrawal(id: string): Promise<void> {
-  const { error } = await db().rpc('cancel_my_withdrawal', { p_transaction_id: id });
+/** Le membre connecté a-t-il déjà acheté au moins un produit ? (condition de retrait) */
+export async function iHavePurchased(): Promise<boolean> {
+  const { data, error } = await db().rpc('i_have_purchased');
   if (error) throw error;
+  return data === true;
 }
 
 /** Achat immédiat d'un véhicule : commande créée et réglée avec le solde du portefeuille. */

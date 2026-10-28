@@ -7,6 +7,7 @@ import {
   LifeBuoy,
   Lock,
   LogOut,
+  MessageSquare,
   Receipt,
   Shield,
   ShoppingBag,
@@ -152,6 +153,7 @@ export default function DashboardPage() {
       <section className="mt-6 space-y-3">
         <h2 className="text-lg font-bold text-slate-900">Centre personnel</h2>
         {settings?.feature_referral && <MenuRow to="/compte/parrainage" label="Mon équipe" icon={Users} tone="bg-orange-50 text-orange-600" />}
+        <MenuRow to="/messages" label="Messages" icon={MessageSquare} tone="bg-violet-50 text-violet-600" />
         <MenuRow to="/compte/notifications" label="Notifications" icon={Bell} tone="bg-night-50 text-night-600" badge={data?.unread} />
         <MenuRow to="/compte/profil" label="Mon profil" icon={User} tone="bg-sky-50 text-sky-600" />
         <MenuRow to="/service-client" label="Service client" icon={LifeBuoy} tone="bg-emerald-50 text-emerald-600" />

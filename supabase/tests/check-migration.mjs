@@ -164,6 +164,9 @@ await expectError("client ne valide pas son propre dépôt", () => as(INV, `sele
 await as(ADMIN, `select admin_review_deposit($1, true)`, [dep.rows[0].id]);
 (await bal(INV)) === 1000 ? ok('dépôt crédité après vérification : 1000') : fail('solde', await bal(INV));
 
+await expectError('retrait refusé sans produit acheté', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /acheté au moins un produit/);
+// Achat simulé (commande réglée) pour tester la suite du parcours de retrait
+await db.exec(`insert into orders (user_id, status, total_amount, currency, idempotency_key) values ('${INV}', 'payment_confirmed', 0, 'CDF', gen_random_uuid())`);
 await expectError('retrait sans portefeuille configuré refusé', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /Configurez/);
 await expectError('ancien retrait sans mot de passe bloqué', () => as(INV, `select request_withdrawal(100, 'CDF', 'Mobile', '+000111', gen_random_uuid())`), /permission denied/);
 await expectError('numéro Airtel invalide refusé', () => as(INV, `select set_withdrawal_account('Jean', '12345', '1234')`), /invalide/);
@@ -176,16 +179,16 @@ const bad = await as(INV, `select (request_withdrawal_with_password(100, '0000',
 bad.rows[0].id === null && (await bal(INV)) === 1000 ? ok('mauvais mot de passe : aucun retrait créé') : fail('mot de passe', JSON.stringify(bad.rows));
 const w1 = await as(INV, `select * from request_withdrawal_with_password(100, '1234', gen_random_uuid())`);
 w1.rows[0].status === 'pending' && w1.rows[0].method === 'Airtel Money' ? ok('retrait en traitement bancaire') : fail('retrait', JSON.stringify(w1.rows[0]));
-(await bal(INV)) === 898 ? ok('retrait 100 + frais 2 bloqués → disponible 898') : fail('retrait', await bal(INV));
+(await bal(INV)) === 900 && Number(w1.rows[0].amount) === 98 ? ok('retrait 100 (98 envoyés + 2 de frais) → disponible 900') : fail('retrait', await bal(INV));
 await expectError('refus sans motif impossible', () => as(ADMIN, `select admin_process_withdrawal($1, false)`, [w1.rows[0].id]), /motif/);
 await as(ADMIN, `select admin_process_withdrawal($1, false, 'Numéro Airtel injoignable')`, [w1.rows[0].id]);
 const r1 = await db.query(`select status, rejection_reason from transactions where id = $1`, [w1.rows[0].id]);
 r1.rows[0].status === 'rejected' && (await bal(INV)) === 1000 ? ok('retrait refusé avec motif → fonds libérés') : fail('refus', JSON.stringify(r1.rows));
-await expectError('retrait supérieur au solde refusé', () => as(INV, `select request_withdrawal_with_password(995, '1234', gen_random_uuid())`), /insuffisant/);
+await expectError('retrait supérieur au solde refusé', () => as(INV, `select request_withdrawal_with_password(1001, '1234', gen_random_uuid())`), /insuffisant/);
 const w2 = await as(INV, `select * from request_withdrawal_with_password(100, '1234', gen_random_uuid())`);
 await as(ADMIN, `select admin_process_withdrawal($1, true)`, [w2.rows[0].id]);
 const r2 = await db.query(`select status from transactions where id = $1`, [w2.rows[0].id]);
-r2.rows[0].status === 'confirmed' && (await bal(INV)) === 898 ? ok('retrait confirmé sans référence → disponible 898') : fail('confirmation', JSON.stringify(r2.rows));
+r2.rows[0].status === 'confirmed' && (await bal(INV)) === 900 ? ok('retrait confirmé sans référence → disponible 900') : fail('confirmation', JSON.stringify(r2.rows));
 for (let i = 0; i < 5; i++) await as(INV, `select request_withdrawal_with_password(10, 'faux', gen_random_uuid())`);
 await expectError('5 erreurs → blocage temporaire', () => as(INV, `select request_withdrawal_with_password(10, '1234', gen_random_uuid())`), /Trop d'essais/);
 await db.exec(`update withdrawal_accounts set locked_until = null, failed_attempts = 0`);
@@ -207,7 +210,7 @@ await expectError('ajustement sans motif refusé', () => as(ADMIN, `select admin
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Apport validé par la direction, pièce n°42')`, [INV]);
 await as(INV, `select pay_order_with_wallet($1)`, [o3.rows[0].id]);
 const st4 = await db.query(`select status from orders where id = $1`, [o3.rows[0].id]);
-st4.rows[0].status === 'payment_confirmed' && (await bal(INV)) === 5898 ? ok('commande payée depuis le portefeuille') : fail('paiement portefeuille', st4.rows[0].status + ' ' + await bal(INV));
+st4.rows[0].status === 'payment_confirmed' && (await bal(INV)) === 5900 ? ok('commande payée depuis le portefeuille') : fail('paiement portefeuille', st4.rows[0].status + ' ' + await bal(INV));
 (await bal(OTHER)) === 750 ? ok('commission de 5 % sur la commande : +750') : fail('commission commande', await bal(OTHER));
 const refs = await as(OTHER, `select * from my_referrals()`);
 refs.rows.length === 1 && refs.rows[0].display_name === 'Jean I.' ? ok(`équipe de parrainage : ${refs.rows[0].display_name}`) : fail('équipe', JSON.stringify(refs.rows));
@@ -243,6 +246,34 @@ await db.exec(`insert into auth.users (id, email) values ('${NEW2}', 'n2@test.lo
 (await bal(NEW2, 'CDF')) === 50 ? ok('bonus réduit par l\'admin : 50 FC') : fail('bonus réduit', await bal(NEW2, 'CDF'));
 const notAdmin = await as(NEW1, `update platform_settings set signup_bonus = 99999 returning id`);
 notAdmin.rows.length === 0 ? ok('un client ne peut pas changer le bonus') : fail('bonus', 'modifié par un client');
+
+console.log('15. Règles de retrait et équipe');
+await as(ADMIN, `update platform_settings set min_withdrawal = 6000, withdrawal_fee_percent = 30, withdrawal_fee_fixed = 0`);
+await as(R1, `select set_withdrawal_account('Membre Un', '243971111111', '1234')`);
+await as(ADMIN, `select admin_wallet_adjustment($1, 10000, 'CDF', 'credit', 'Test retrait sans achat')`, [R1]);
+await expectError('retrait refusé sans produit acheté (membre parrain)', () => as(R1, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`), /acheté au moins un produit/);
+await as(B, `select set_withdrawal_account('Membre B', '243972222222', '4321')`);
+await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test retrait')`, [B]);
+const beforeB = await bal(B, 'CDF');
+await expectError('retrait sous 6 000 FC refusé', () => as(B, `select * from request_withdrawal_with_password(5000, '4321', gen_random_uuid())`), /minimum/);
+const wd = await as(B, `select * from request_withdrawal_with_password(10000, '4321', gen_random_uuid())`);
+const afterB = await bal(B, 'CDF');
+Number(wd.rows[0].amount) === 7000 && beforeB - afterB === 10000
+  ? ok('10 000 FC demandés : 7 000 FC envoyés, solde -10 000 FC')
+  : fail('frais 30 %', JSON.stringify({ net: wd.rows[0].amount, debit: beforeB - afterB }));
+await expectError('le membre ne peut plus annuler un retrait', () => as(B, `select cancel_my_withdrawal($1)`, [wd.rows[0].id]), /permission denied/);
+const myTeam = await as(R3, `select level, has_invested, phone from my_team()`);
+myTeam.rows.length === 1 && myTeam.rows[0].has_invested === true
+  ? ok('équipe : invité ayant investi identifié')
+  : fail('my_team', JSON.stringify(myTeam.rows));
+const deep = await as(R1, `select level, has_invested, phone from my_team() order by level`);
+deep.rows.length === 3 && deep.rows[1].has_invested === false && deep.rows[2].has_invested === true
+  ? ok('équipe sur 3 niveaux avec statut d\'achat, numéro masqué au niveau 3')
+  : fail('my_team 3 niveaux', JSON.stringify(deep.rows));
+(await as(B, `select i_have_purchased() as v`)).rows[0].v === true && (await as(R1, `select i_have_purchased() as v`)).rows[0].v === false
+  ? ok('i_have_purchased correct')
+  : fail('i_have_purchased', '');
+await expectError('has_purchased_product non exposée', () => as(R1, `select has_purchased_product($1)`, [B]), /permission denied/);
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

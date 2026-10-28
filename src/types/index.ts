@@ -345,10 +345,15 @@ export interface ReferralCommission {
   created_at: string;
 }
 
-export interface ReferralMember {
+export interface TeamMember {
   display_name: string;
+  /** Numéro complet au niveau 1, masqué aux niveaux 2 et 3 */
+  phone: string | null;
   joined_at: string;
   level: number;
+  has_invested: boolean;
+  products_count: number;
+  invested_amount: number;
   commissions: number;
 }
 
