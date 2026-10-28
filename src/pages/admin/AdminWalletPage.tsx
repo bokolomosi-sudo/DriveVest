@@ -207,7 +207,7 @@ function AdjustmentTab() {
             {(balances.data ?? []).map((b) => <p key={b.currency}>Disponible : <strong>{formatPrice(b.available, b.currency)}</strong></p>)}
             {balances.data?.length === 0 && <p>Aucune opération de portefeuille.</p>}
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Sens" htmlFor="adj-dir">
               <select id="adj-dir" className="input" value={direction} onChange={(e) => setDirection(e.target.value as 'credit' | 'debit')}>
                 <option value="credit">Crédit</option><option value="debit">Débit</option>

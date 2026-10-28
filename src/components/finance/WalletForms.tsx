@@ -133,7 +133,7 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
             type="tel"
             inputMode="tel"
             maxLength={13}
-            className="h-12 w-full bg-transparent text-sm focus:outline-none"
+            className="h-12 w-full bg-transparent text-base focus:outline-none sm:text-sm"
             placeholder="0971234567"
             value={number}
             onChange={(e) => setNumber(e.target.value)}

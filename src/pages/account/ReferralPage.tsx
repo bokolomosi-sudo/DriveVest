@@ -65,7 +65,7 @@ export default function ReferralPage() {
               <ul className="grid grid-cols-3 gap-2 text-center">
                 {['Vos invités', 'Leurs invités', 'Niveau 3'].map((label, i) => (
                   <li key={label} className="rounded-lg bg-accent-50 p-2">
-                    <p className="text-xl font-bold text-accent-700">{rates[i]} %</p>
+                    <p className="text-lg font-bold text-accent-700 min-[360px]:text-xl">{rates[i]} %</p>
                     <p className="text-xs">{label}</p>
                   </li>
                 ))}

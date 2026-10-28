@@ -2,7 +2,7 @@ import { Lock, Phone } from 'lucide-react';
 import { DEFAULT_COUNTRY_CODE } from '../../lib/phoneAuth';
 
 const FIELD = 'flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-500/30';
-const INPUT = 'h-12 w-full min-w-0 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none';
+const INPUT = 'h-12 w-full min-w-0 bg-transparent text-base text-slate-900 sm:text-sm placeholder:text-slate-400 focus:outline-none';
 
 /** Numéro de téléphone de RDC : l'indicatif +243 est fixe. */
 export function PhoneField({ id, number, onNumberChange }: { id: string; number: string; onNumberChange: (value: string) => void }) {
@@ -18,7 +18,7 @@ export function PhoneField({ id, number, onNumberChange }: { id: string; number:
         required
         aria-label="Numéro de téléphone"
         className={INPUT}
-        placeholder="Entrez votre numéro"
+        placeholder="Votre numéro"
         value={number}
         onChange={(e) => onNumberChange(e.target.value)}
       />

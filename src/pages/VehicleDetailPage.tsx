@@ -229,7 +229,7 @@ export default function VehicleDetailPage() {
 
           <div className="card p-5">
             <p className="text-sm text-slate-500">Prix affiché</p>
-            <p className="mt-1 text-3xl font-extrabold text-night-900">{formatPrice(vehicle.price, vehicle.currency)}</p>
+            <p className="mt-1 break-words text-2xl font-extrabold text-night-900 min-[360px]:text-3xl">{formatPrice(vehicle.price, vehicle.currency)}</p>
             {vehicle.duration_days && (
               <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600"><Clock className="h-4 w-4" /> Durée : {vehicle.duration_days} jours</p>
             )}

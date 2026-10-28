@@ -136,7 +136,7 @@ export default function AdminSettingsPage() {
         </Section>
 
         <Section title="Parrainage">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Niveau 1 (%)" htmlFor="s-ref" hint="Filleul direct."><input id="s-ref" type="number" min={0} max={100} step="0.01" className="input" value={form.referral_commission_percent} onChange={text('referral_commission_percent')} /></Field>
             <Field label="Niveau 2 (%)" htmlFor="s-ref2" hint="Filleul du filleul."><input id="s-ref2" type="number" min={0} max={100} step="0.01" className="input" value={form.referral_level2_percent} onChange={text('referral_level2_percent')} /></Field>
             <Field label="Niveau 3 (%)" htmlFor="s-ref3" hint="Troisième niveau."><input id="s-ref3" type="number" min={0} max={100} step="0.01" className="input" value={form.referral_level3_percent} onChange={text('referral_level3_percent')} /></Field>
