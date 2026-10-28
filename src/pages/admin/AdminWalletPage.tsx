@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DepositChannelsManager } from '../../components/admin/DepositChannelsManager';
 import { WalletOperations } from '../../components/admin/WalletOperations';
+import { WithdrawalNetworksManager } from '../../components/admin/WithdrawalNetworksManager';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Badge } from '../../components/ui/Badge';
@@ -21,6 +22,7 @@ const TABS = [
   { key: 'depots', label: 'Dépôts' },
   { key: 'retraits', label: 'Retraits' },
   { key: 'comptes', label: 'Comptes de dépôt' },
+  { key: 'reseaux', label: 'Réseaux de retrait' },
   { key: 'ajustement', label: 'Ajustement' },
   { key: 'parrainage', label: 'Commissions' },
 ] as const;
@@ -156,6 +158,8 @@ export default function AdminWalletPage() {
         <WalletOperations kind="withdrawal" />
       ) : tab === 'comptes' ? (
         <DepositChannelsManager />
+      ) : tab === 'reseaux' ? (
+        <WithdrawalNetworksManager />
       ) : tab === 'ajustement' ? (
         <AdjustmentTab />
       ) : tab === 'parrainage' ? (

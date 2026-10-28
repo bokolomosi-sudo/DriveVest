@@ -73,7 +73,7 @@ function OperationCard({
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl bg-slate-50 p-4">
-        <Info label="Opérateur" value={tx.method ?? 'Airtel Money'} />
+        <Info label="Opérateur" value={tx.method} />
         {kind === 'withdrawal' ? (
           <>
             <Info label="Numéro" value={<span className="underline underline-offset-2">{number}</span>} mono />
@@ -208,7 +208,7 @@ export function WalletOperations({ kind }: { kind: Kind }) {
             {action.approve && kind === 'withdrawal' && (
               <>
                 <p>Envoyer vers : <strong>{action.tx.destination}</strong></p>
-                <Alert tone="warning">Marquez payé seulement après avoir envoyé l'argent sur ce numéro Airtel Money.</Alert>
+                <Alert tone="warning">Marquez payé seulement après avoir envoyé l'argent sur ce numéro {action.tx.method ?? 'Mobile Money'}.</Alert>
                 <Field label="Référence de l'envoi (facultatif)" htmlFor="payout">
                   <input id="payout" className="input" value={payout} onChange={(e) => setPayout(e.target.value)} />
                 </Field>

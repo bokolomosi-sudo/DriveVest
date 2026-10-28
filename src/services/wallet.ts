@@ -1,6 +1,7 @@
 import { db } from '../lib/supabase';
 import type {
-  DepositChannel, Order, PlatformSettings, Transaction, TransactionStatus, WalletBalance } from '../types';
+  DepositChannel,
+  WithdrawalNetwork, Order, PlatformSettings, Transaction, TransactionStatus, WalletBalance } from '../types';
 import { PAYMENT_PROOFS_BUCKET } from './orders';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -90,27 +91,54 @@ export function withdrawalFee(amount: number, settings: PlatformSettings | null)
 }
 
 export interface WithdrawalAccount {
+  network: string;
   holder_name: string;
   airtel_number: string;
 }
 
-/** Portefeuille de retrait Airtel Money du client (null s'il n'est pas encore configuré). */
+/** Réseaux de retrait proposés aux membres (Airtel Money, Orange Money…). */
+export async function listWithdrawalNetworks(): Promise<WithdrawalNetwork[]> {
+  const { data, error } = await db().from('withdrawal_networks').select('*').eq('is_active', true).order('sort_order').order('name');
+  if (error) throw error;
+  return (data ?? []) as WithdrawalNetwork[];
+}
+
+export async function adminListWithdrawalNetworks(): Promise<WithdrawalNetwork[]> {
+  const { data, error } = await db().from('withdrawal_networks').select('*').order('sort_order').order('name');
+  if (error) throw error;
+  return (data ?? []) as WithdrawalNetwork[];
+}
+
+export async function adminSaveWithdrawalNetwork(input: Omit<WithdrawalNetwork, 'id'>, id?: string): Promise<void> {
+  const { error } = id
+    ? await db().from('withdrawal_networks').update(input).eq('id', id)
+    : await db().from('withdrawal_networks').insert(input);
+  if (error) throw error;
+}
+
+export async function adminDeleteWithdrawalNetwork(id: string): Promise<void> {
+  const { error } = await db().from('withdrawal_networks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** Portefeuille de retrait du client (null s'il n'est pas encore configuré). */
 export async function getMyWithdrawalAccount(): Promise<WithdrawalAccount | null> {
   const { data, error } = await db().rpc('get_my_withdrawal_account');
   if (error) throw error;
   return ((data ?? []) as WithdrawalAccount[])[0] ?? null;
 }
 
-export async function setWithdrawalAccount(params: { holderName: string; airtelNumber: string; password: string }): Promise<void> {
+export async function setWithdrawalAccount(params: { network: string; holderName: string; number: string; password: string }): Promise<void> {
   const { error } = await db().rpc('set_withdrawal_account', {
+    p_network: params.network,
     p_holder_name: params.holderName,
-    p_airtel_number: params.airtelNumber,
+    p_number: params.number,
     p_password: params.password,
   });
   if (error) throw error;
 }
 
-/** Retrait vers Airtel Money, protégé par le mot de passe de retrait. */
+/** Retrait vers le réseau du membre, protégé par le mot de passe de retrait. */
 export async function requestWithdrawal(params: { amount: number; password: string; idempotencyKey: string }): Promise<Transaction> {
   const { data, error } = await db().rpc('request_withdrawal_with_password', {
     p_amount: params.amount,

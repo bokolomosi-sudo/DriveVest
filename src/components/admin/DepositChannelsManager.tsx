@@ -4,6 +4,7 @@ import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
 import { Modal } from '../ui/Modal';
+import { WalletRulesCard } from './WalletRulesCard';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
@@ -79,6 +80,7 @@ export function DepositChannelsManager() {
 
   return (
     <>
+      <WalletRulesCard title="Règles du dépôt" keys={['min_deposit']} />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Comptes de dépôt</h2>

@@ -193,7 +193,7 @@ export default function AdminUserDetailPage() {
         {o?.withdrawal_account ? (
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div><dt className="text-xs text-slate-500">Bénéficiaire</dt><dd className="font-semibold">{o.withdrawal_account.holder_name}</dd></div>
-            <div><dt className="text-xs text-slate-500">Numéro Airtel Money</dt><dd className="font-mono font-semibold">{o.withdrawal_account.airtel_number}</dd></div>
+            <div><dt className="text-xs text-slate-500">Numéro {o.withdrawal_account.network}</dt><dd className="font-mono font-semibold">{o.withdrawal_account.airtel_number}</dd></div>
             <div><dt className="text-xs text-slate-500">Configuré le</dt><dd>{formatDate(o.withdrawal_account.created_at)}</dd></div>
             <div>
               <dt className="text-xs text-slate-500">Mot de passe de retrait</dt>
@@ -266,7 +266,7 @@ export default function AdminUserDetailPage() {
           )}
           {action === 'withdrawal' && (
             <>
-              <p>Le numéro Airtel Money et le mot de passe de retrait de ce membre seront supprimés. Il devra les configurer de nouveau avant son prochain retrait.</p>
+              <p>Le réseau, le numéro et le mot de passe de retrait de ce membre seront supprimés. Il devra les configurer de nouveau avant son prochain retrait.</p>
               <Field label="Motif" htmlFor="wd-reason" required>
                 <input id="wd-reason" className="input" placeholder="Ex. : mot de passe de retrait oublié" value={reason} onChange={(e) => setReason(e.target.value)} />
               </Field>

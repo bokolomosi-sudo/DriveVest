@@ -456,6 +456,7 @@ export interface AdminUserOverview {
   balance: number;
   sponsor: { id: string; full_name: string | null; phone: string | null } | null;
   withdrawal_account: {
+    network: string;
     holder_name: string;
     airtel_number: string;
     failed_attempts: number;
@@ -469,4 +470,12 @@ export interface AdminUserOverview {
   total_withdrawals: number;
   total_commissions: number;
   total_rewards: number;
+}
+
+/** Réseau Mobile Money sur lequel un membre peut recevoir ses retraits */
+export interface WithdrawalNetwork {
+  id: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
 }

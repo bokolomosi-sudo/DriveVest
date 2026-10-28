@@ -61,7 +61,7 @@ export async function adminResetUserPassword(userId: string, password: string): 
   if (error) throw error;
 }
 
-/** Supprime le numéro Airtel et le mot de passe de retrait : le membre les configure de nouveau. */
+/** Supprime le réseau, le numéro et le mot de passe de retrait : le membre les configure de nouveau. */
 export async function adminResetWithdrawalAccount(userId: string, reason: string): Promise<void> {
   const { error } = await db().rpc('admin_reset_withdrawal_account', { p_user_id: userId, p_reason: reason });
   if (error) throw error;

@@ -14,6 +14,7 @@ import { transactionStatus, type Tone } from '../../lib/labels';
 import { formatLocalPhone, parseLocalPhone } from '../../lib/phoneAuth';
 import {
   listDepositChannels,
+  listWithdrawalNetworks,
   requestDeposit,
   requestWithdrawal,
   setWithdrawalAccount,
@@ -201,6 +202,9 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
 
 export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
   const { notify } = useToast();
+  const networks = useAsync(listWithdrawalNetworks, []);
+  const [networkName, setNetworkName] = useState<string | null>(null);
+  const network = networkName ?? networks.data?.[0]?.name ?? null;
   const [holderName, setHolderName] = useState('');
   const [number, setNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -212,14 +216,15 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    const airtelNumber = parseLocalPhone(number);
-    if (holderName.trim().length < 2) return setError('Indiquez le nom du titulaire du compte Airtel Money.');
-    if (!airtelNumber) return setError('Numéro Airtel Money invalide : 10 chiffres commençant par 0 (ex. 0971234567).');
+    const phone = parseLocalPhone(number);
+    if (!network) return setError('Choisissez votre réseau.');
+    if (holderName.trim().length < 2) return setError(`Indiquez le nom du titulaire du compte ${network}.`);
+    if (!phone) return setError(`Numéro ${network} invalide : 10 chiffres commençant par 0 (ex. 0971234567).`);
     if (password.length < 4) return setError('Le mot de passe de retrait doit contenir au moins 4 caractères.');
     if (password !== confirm) return setError('Les mots de passe de retrait ne correspondent pas.');
     setBusy(true);
     try {
-      await setWithdrawalAccount({ holderName, airtelNumber, password });
+      await setWithdrawalAccount({ network, holderName, number: phone, password });
       notify('success', 'Portefeuille de paiement enregistré.');
       onDone();
     } catch (err) {
@@ -233,10 +238,31 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="card space-y-4 p-5">
       <h2 className="text-lg font-semibold">Configurer mon portefeuille de paiement</h2>
       <p className="text-sm text-slate-500">À faire une seule fois : ce compte recevra vos retraits.</p>
+      {networks.loading ? <LoadingState /> : networks.error ? <ErrorState message={networks.error} onRetry={networks.reload} /> : !networks.data?.length ? (
+        <Alert tone="warning">Aucun réseau de retrait n'est disponible pour le moment. Contactez le service client.</Alert>
+      ) : (
+        <div>
+          <p className="label">Réseau</p>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Réseau de retrait">
+            {networks.data.map((n) => (
+              <button
+                key={n.id}
+                type="button"
+                role="radio"
+                aria-checked={network === n.name}
+                onClick={() => setNetworkName(n.name)}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${network === n.name ? 'border-green-600 bg-green-50 text-green-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                <Smartphone className="h-4 w-4" aria-hidden="true" /> {n.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <Field label="Nom du titulaire" htmlFor="wa-name" required>
         <input id="wa-name" className="input" maxLength={120} value={holderName} onChange={(e) => setHolderName(e.target.value)} />
       </Field>
-      <Field label="Numéro Airtel Money" htmlFor="wa-number" required>
+      <Field label={`Numéro ${network ?? 'Mobile Money'}`} htmlFor="wa-number" required>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-500/30">
           <Phone className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
           <input
@@ -266,7 +292,7 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
 export function WithdrawalAccountCard({ account }: { account: WithdrawalAccount }) {
   return (
     <div className="card space-y-3 p-5">
-      <p className="text-sm text-slate-500">Compte Airtel Money</p>
+      <p className="text-sm text-slate-500">Compte {account.network}</p>
       <dl className="space-y-2 text-sm">
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Titulaire</dt><dd className="font-semibold">{account.holder_name}</dd></div>
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Numéro</dt><dd className="font-semibold">{formatLocalPhone(account.airtel_number)}</dd></div>
@@ -416,7 +442,7 @@ export function WithdrawalForm({
             <div className="flex justify-between gap-3"><dt className="text-slate-500">Montant demandé</dt><dd className="font-semibold">{formatPrice(value, CURRENCY)}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">Frais ({feePercent} %)</dt><dd>−{formatPrice(fee, CURRENCY)}</dd></div>
             <div className="flex justify-between gap-3 border-t border-slate-200 pt-2 text-base font-bold"><dt>Vous recevez</dt><dd className="text-accent-700">{formatPrice(value - fee, CURRENCY)}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-slate-500">Vers</dt><dd className="text-right font-medium">{account.holder_name} · {formatLocalPhone(account.airtel_number)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Vers</dt><dd className="text-right font-medium">{account.network} · {account.holder_name} · {formatLocalPhone(account.airtel_number)}</dd></div>
           </dl>
           <Field label="Mot de passe de retrait" htmlFor="wd-password" required>
             <PasswordField id="wd-password" value={password} onChange={setPassword} placeholder="Mot de passe de retrait" autoComplete="current-password" autoFocus />

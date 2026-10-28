@@ -177,9 +177,9 @@ await expectError('retrait refusé sans produit acheté', () => as(INV, `select 
 await db.exec(`insert into orders (user_id, status, total_amount, currency, idempotency_key) values ('${INV}', 'payment_confirmed', 0, 'CDF', gen_random_uuid())`);
 await expectError('retrait sans portefeuille configuré refusé', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /Configurez/);
 await expectError('ancien retrait sans mot de passe bloqué', () => as(INV, `select request_withdrawal(100, 'CDF', 'Mobile', '+000111', gen_random_uuid())`), /permission denied/);
-await expectError('numéro Airtel invalide refusé', () => as(INV, `select set_withdrawal_account('Jean', '12345', '1234')`), /invalide/);
-await expectOk('portefeuille de retrait configuré', () => as(INV, `select set_withdrawal_account('Jean Investisseur', '243971234567', '1234')`));
-await expectError('reconfiguration refusée', () => as(INV, `select set_withdrawal_account('Autre', '243971234567', '9999')`), /déjà configuré/);
+await expectError('numéro Airtel invalide refusé', () => as(INV, `select set_withdrawal_account('Airtel Money', 'Jean', '12345', '1234')`), /invalide/);
+await expectOk('portefeuille de retrait configuré', () => as(INV, `select set_withdrawal_account('Airtel Money', 'Jean Investisseur', '243971234567', '1234')`));
+await expectError('reconfiguration refusée', () => as(INV, `select set_withdrawal_account('Airtel Money', 'Autre', '243971234567', '9999')`), /déjà configuré/);
 await expectError('mot de passe haché illisible', () => as(INV, `select * from withdrawal_accounts`), /permission denied/);
 const acc = await as(INV, `select * from get_my_withdrawal_account()`);
 acc.rows[0]?.airtel_number === '243971234567' ? ok('portefeuille de retrait lisible par son titulaire') : fail('portefeuille', JSON.stringify(acc.rows));
@@ -257,10 +257,10 @@ notAdmin.rows.length === 0 ? ok('un client ne peut pas changer le bonus') : fail
 
 console.log('15. Règles de retrait et équipe');
 await as(ADMIN, `update platform_settings set min_withdrawal = 6000, withdrawal_fee_percent = 30, withdrawal_fee_fixed = 0`);
-await as(R1, `select set_withdrawal_account('Membre Un', '243971111111', '1234')`);
+await as(R1, `select set_withdrawal_account('Airtel Money', 'Membre Un', '243971111111', '1234')`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 10000, 'CDF', 'credit', 'Test retrait sans achat')`, [R1]);
 await expectError('retrait refusé sans produit acheté (membre parrain)', () => as(R1, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`), /acheté au moins un produit/);
-await as(B, `select set_withdrawal_account('Membre B', '243972222222', '4321')`);
+await as(B, `select set_withdrawal_account('Airtel Money', 'Membre B', '243972222222', '4321')`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test retrait')`, [B]);
 const beforeB = await bal(B, 'CDF');
 await expectError('retrait sous 6 000 FC refusé', () => as(B, `select * from request_withdrawal_with_password(5000, '4321', gen_random_uuid())`), /minimum/);
@@ -350,6 +350,26 @@ o.team_level1 === 2 && o.invested_invitees === 2 && Number(o.total_rewards) === 
   ? ok('fiche membre : équipe, récompenses et parrain')
   : fail('fiche membre', JSON.stringify(o));
 await expectError('fiche membre réservée à l\'admin', () => as(R3, `select admin_user_overview($1)`, [R3]), /administrateurs/);
+
+console.log('18. Réseaux de retrait');
+await expectError('un client n\'ajoute pas de réseau', () => as(C, `insert into withdrawal_networks (name) values ('Faux réseau')`), /row-level security|permission denied/);
+await expectOk('l\'admin ajoute Orange Money', () => as(ADMIN, `insert into withdrawal_networks (name, sort_order) values ('Orange Money', 1)`));
+await as(ADMIN, `insert into withdrawal_networks (name, is_active) values ('Réseau masqué', false)`);
+const nets = await as(C, `select name from withdrawal_networks order by sort_order`);
+JSON.stringify(nets.rows.map((r) => r.name)) === '["Airtel Money","Orange Money"]' ? ok('le membre voit les réseaux actifs') : fail('réseaux', JSON.stringify(nets.rows));
+await expectError('réseau masqué refusé', () => as(C, `select set_withdrawal_account('Réseau masqué', 'Membre C', '243851112222', '1234')`), /réseau/);
+await expectOk('portefeuille configuré sur Orange Money', () => as(C, `select set_withdrawal_account('Orange Money', 'Membre C', '243851112222', '1234')`));
+const accC = await as(C, `select * from get_my_withdrawal_account()`);
+accC.rows[0]?.network === 'Orange Money' ? ok('réseau enregistré') : fail('réseau', JSON.stringify(accC.rows));
+await as(ADMIN, `update platform_settings set min_withdrawal = 1000`);
+await as(ADMIN, `select admin_wallet_adjustment($1, 10000, 'CDF', 'credit', 'Test retrait Orange')`, [C]);
+const wdC = await as(C, `select * from request_withdrawal_with_password(2000, '1234', gen_random_uuid())`);
+wdC.rows[0].method === 'Orange Money' && wdC.rows[0].destination.startsWith('0851112222') ? ok('retrait envoyé vers Orange Money') : fail('retrait Orange', JSON.stringify(wdC.rows[0]));
+await as(ADMIN, `select admin_process_withdrawal($1, true)`, [wdC.rows[0].id]);
+const noteC = await db.query(`select body from notifications where user_id = $1 order by created_at desc limit 1`, [C]);
+noteC.rows[0].body.includes('Orange Money') ? ok('notification avec le bon réseau') : fail('notification', noteC.rows[0].body);
+const ovC = await as(ADMIN, `select admin_user_overview($1) as o`, [C]);
+ovC.rows[0].o.withdrawal_account?.network === 'Orange Money' ? ok('fiche admin : réseau visible') : fail('fiche réseau', JSON.stringify(ovC.rows[0].o.withdrawal_account));
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
