@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, KeyRound, Lock, MapPin, Phone, ShieldCheck, Unlock, Wallet } from 'lucide-react';
 import { OperationsList } from '../../components/finance/WalletForms';
 import { PageMeta } from '../../components/PageMeta';
@@ -77,6 +77,16 @@ export default function AdminUserDetailPage() {
     setAmount('');
     setPassword(a === 'password' ? randomPassword() : '');
   };
+
+  // Lien « Créditer / Débiter » de la liste des membres : la fenêtre s'ouvre directement
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.get('action') === 'solde') {
+      open('adjust');
+      setParams({}, { replace: true });
+    }
+    // open est recréée à chaque rendu ; seul le paramètre compte ici
+  }, [params, setParams]);
 
   const reloadAll = async () => {
     await Promise.all([member.reload(), overview.reload(), history.reload()]);
@@ -159,7 +169,7 @@ export default function AdminUserDetailPage() {
           <KeyRound className="h-5 w-5" /> <span className="text-xs">Réinitialiser le mot de passe</span>
         </button>
         <button className="btn-secondary h-auto flex-col gap-1 rounded-2xl py-3" onClick={() => open('adjust')}>
-          <Wallet className="h-5 w-5" /> <span className="text-xs">Ajuster le solde</span>
+          <Wallet className="h-5 w-5" /> <span className="text-xs">Créditer / Débiter</span>
         </button>
         <button className="btn-secondary h-auto flex-col gap-1 rounded-2xl py-3" onClick={() => open('withdrawal')} disabled={!o?.withdrawal_account}>
           <ShieldCheck className="h-5 w-5" /> <span className="text-xs">Réinitialiser le retrait</span>
@@ -242,7 +252,7 @@ export default function AdminUserDetailPage() {
         title={
           action === 'password' ? 'Réinitialiser le mot de passe'
             : action === 'withdrawal' ? 'Réinitialiser le portefeuille de retrait'
-              : action === 'adjust' ? 'Ajuster le solde'
+              : action === 'adjust' ? 'Créditer ou débiter le compte'
                 : u.is_blocked ? 'Débloquer le compte' : 'Bloquer le compte'
         }
         onClose={() => !busy && setAction(null)}
@@ -274,6 +284,7 @@ export default function AdminUserDetailPage() {
           )}
           {action === 'adjust' && (
             <>
+              {o && <p>Solde actuel : <strong>{formatPrice(o.balance, CURRENCY)}</strong>. Un débit ne peut pas dépasser ce solde.</p>}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Sens" htmlFor="adj-dir">
                   <select id="adj-dir" className="input" value={direction} onChange={(e) => setDirection(e.target.value as 'credit' | 'debit')}>

@@ -109,6 +109,8 @@ function validate(i: VehicleInput): string | null {
   if (i.seats !== null && (!Number.isInteger(i.seats) || i.seats < 1 || i.seats > 100)) return 'Nombre de places invalide.';
   if (i.duration_days !== null && (!Number.isInteger(i.duration_days) || i.duration_days < 1)) return 'Durée invalide (nombre de jours).';
   if (i.status === 'published' && !i.category_id) return 'Choisissez une catégorie avant de publier.';
+  if (i.status === 'published' && (!i.price || i.price <= 0)) return 'Indiquez le prix avant de publier ce produit.';
+  if (i.status === 'published' && !i.duration_days) return 'Indiquez la durée avant de publier ce produit.';
   return null;
 }
 
@@ -337,13 +339,13 @@ export default function AdminVehicleFormPage() {
 
           <section className="card grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
             <h2 className="text-lg font-semibold sm:col-span-2 lg:col-span-3">Vente</h2>
-            <Field label="Prix affiché" htmlFor="v-price" hint="Laisser vide = prix sur demande (commande en ligne impossible).">
+            <Field label="Prix affiché" htmlFor="v-price" hint="Obligatoire pour publier le produit.">
               <input id="v-price" type="number" min={0} step="0.01" className="input" value={form.price} onChange={set('price')} />
             </Field>
             <Field label="Devise" htmlFor="v-cur" required hint="Franc congolais uniquement.">
               <input id="v-cur" className="input uppercase bg-slate-50" maxLength={3} readOnly value={form.currency} onChange={set('currency')} />
             </Field>
-            <Field label="Durée (jours)" htmlFor="v-duration" hint="Durée associée au produit.">
+            <Field label="Durée (jours)" htmlFor="v-duration" hint="Obligatoire pour publier. Sert à calculer la date d'expiration.">
               <input id="v-duration" type="number" min={1} className="input" value={form.duration_days} onChange={set('duration_days')} />
             </Field>
             <Field label="Disponibilité" htmlFor="v-avail">

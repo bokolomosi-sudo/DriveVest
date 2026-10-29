@@ -93,9 +93,10 @@ console.log('4. Catalogue');
 await expectError('client ne peut pas créer de véhicule', () => as(CLIENT, `insert into vehicles (brand, model, condition) values ('X','Y','new')`), /row-level security/);
 const cat = await db.query(`select id from vehicle_categories where slug = 'berlines'`);
 const v = await expectOk('admin crée un véhicule publié', () => as(ADMIN,
-  `insert into vehicles (category_id, brand, model, year, price, currency, condition, status) values ($1, 'Toyota', 'Corolla', 2022, 15000, 'CDF', 'used', 'published') returning id, published_at`, [cat.rows[0].id]));
+  `insert into vehicles (category_id, brand, model, year, price, currency, condition, status, duration_days) values ($1, 'Toyota', 'Corolla', 2022, 15000, 'CDF', 'used', 'published', 30) returning id, published_at`, [cat.rows[0].id]));
 const vehicleId = v.rows[0].id;
 v.rows[0].published_at ? ok('published_at renseigné automatiquement') : fail('published_at', 'null');
+await expectError('produit publié sans prix refusé', () => as(ADMIN, `insert into vehicles (category_id, brand, model, condition, currency, status, duration_days) values ($1, 'Sans', 'Prix', 'new', 'CDF', 'published', 30)`, [cat.rows[0].id]), /published_requires_price_duration/);
 const draft = await as(ADMIN, `insert into vehicles (brand, model, condition) values ('Brouillon', 'Z', 'new') returning id`);
 const anonSee = await as(null, `select id from vehicles`);
 anonSee.rows.length === 1 && anonSee.rows[0].id === vehicleId ? ok('anonyme ne voit que les véhicules publiés') : fail('visibilité', JSON.stringify(anonSee.rows));

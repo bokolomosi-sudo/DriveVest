@@ -1,4 +1,5 @@
-import { Car } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Car } from 'lucide-react';
 import { PageMeta } from '../components/PageMeta';
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/Feedback';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
@@ -6,7 +7,8 @@ import { useAsync } from '../hooks/useAsync';
 import { listPublishedVehicles } from '../services/vehicles';
 
 export default function HomePage() {
-  const products = useAsync(() => listPublishedVehicles({ sort: 'recent', pageSize: 48 }), []);
+  // Accueil : les deux derniers produits publiés, les autres sont sur la page Produits
+  const products = useAsync(() => listPublishedVehicles({ sort: 'recent', pageSize: 2 }), []);
 
   return (
     <>
@@ -36,15 +38,25 @@ export default function HomePage() {
       </section>
 
       <section className="container-page py-8" aria-labelledby="products-title">
-        <h2 id="products-title" className="mb-5 text-center text-2xl font-extrabold tracking-tight">Nos véhicules</h2>
+        <h2 id="products-title" className="mb-5 text-center text-2xl font-extrabold tracking-tight">Nouveaux produits</h2>
         {products.loading ? (
           <LoadingState />
         ) : products.error ? (
           <ErrorState message={products.error} onRetry={products.reload} />
         ) : products.data && products.data.items.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {products.data.items.map((v) => <VehicleCard key={v.id} vehicle={v} />)}
-          </div>
+          <>
+            <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
+              {products.data.items.map((v) => <VehicleCard key={v.id} vehicle={v} />)}
+            </div>
+            {products.data.total > products.data.items.length && (
+              <p className="mt-6 text-center text-sm text-slate-500">Pour découvrir d'autres produits, visitez la page Produits.</p>
+            )}
+            <div className="mt-3 flex justify-center">
+              <Link to="/produits" className="btn-primary h-12 rounded-2xl px-6 text-base shadow-md">
+                Voir tous les produits <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </>
         ) : (
           <EmptyState icon={<Car className="h-10 w-10" />} title="Aucun véhicule disponible pour le moment" />
         )}

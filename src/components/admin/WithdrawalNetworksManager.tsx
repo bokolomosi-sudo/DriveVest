@@ -32,7 +32,7 @@ export function WithdrawalNetworksManager() {
       notify('success', `${value} ajouté : les membres peuvent le choisir pour leurs retraits.`);
       await networks.reload();
     } catch (err) {
-      setError(toErrorMessage(err).includes('duplicate') ? 'Ce réseau existe déjà.' : toErrorMessage(err));
+      setError(toErrorMessage(err).includes('existe déjà') ? 'Ce réseau existe déjà.' : toErrorMessage(err));
     } finally {
       setBusy(false);
     }

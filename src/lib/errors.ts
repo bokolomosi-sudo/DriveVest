@@ -19,6 +19,7 @@ export function toErrorMessage(err: unknown): string {
     if (/permission denied|row-level security/i.test(msg)) {
       return "Vous n'avez pas l'autorisation d'effectuer cette action.";
     }
+    if (/published_requires_price_duration/i.test(msg)) return 'Indiquez un prix et une durée avant de publier ce produit.';
     if (/duplicate key/i.test(msg)) return 'Cet élément existe déjà.';
     return msg;
   }

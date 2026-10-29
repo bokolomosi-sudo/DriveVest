@@ -99,6 +99,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td>
                     <Link to={`/admin/utilisateurs/${u.id}`} className="btn-secondary btn-sm mr-1">Voir</Link>
+                    <Link to={`/admin/utilisateurs/${u.id}?action=solde`} className="btn-secondary btn-sm mr-1">Créditer / Débiter</Link>
                     {u.id !== me?.id && (
                       <button className={u.is_blocked ? 'btn-secondary btn-sm' : 'btn-ghost btn-sm text-red-700'} onClick={() => { setTarget(u); setReason(''); setActionError(null); }}>
                         {u.is_blocked ? 'Réactiver' : 'Bloquer'}

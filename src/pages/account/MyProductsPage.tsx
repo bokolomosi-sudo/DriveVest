@@ -51,6 +51,11 @@ export default function MyProductsPage() {
                     <p className="text-xs text-slate-500">
                       {item?.vehicle?.duration_days ? `Durée : ${item.vehicle.duration_days} jours · ` : ''}Acheté le {formatDate(o.created_at)}
                     </p>
+                    {item?.vehicle?.duration_days && (
+                      <p className="text-xs font-medium text-slate-700">
+                        Expire le {formatDate(new Date(new Date(o.created_at).getTime() + item.vehicle.duration_days * 86400000).toISOString())}
+                      </p>
+                    )}
                   </div>
                 </Link>
               </li>
