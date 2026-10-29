@@ -87,11 +87,13 @@ export function WithdrawalNetworksManager() {
       ) : (
         <ul className="space-y-2">
           {networks.data.map((n) => (
-            <li key={n.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div className="flex min-w-0 items-center gap-3">
+            <li key={n.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <PaymentLogo name={n.name} className="h-7 w-7" />
-                <p className="truncate font-semibold text-slate-900">{n.name}</p>
-                <Badge tone={n.is_active ? 'success' : 'neutral'}>{n.is_active ? 'Proposé' : 'Masqué'}</Badge>
+                <div className="min-w-0">
+                  <p className="break-words font-semibold text-slate-900">{n.name}</p>
+                  <Badge tone={n.is_active ? 'success' : 'neutral'}>{n.is_active ? 'Proposé' : 'Masqué'}</Badge>
+                </div>
               </div>
               <div className="flex shrink-0 gap-1">
                 <button className="btn-secondary btn-sm" onClick={() => toggle(n)}>{n.is_active ? 'Masquer' : 'Proposer'}</button>
