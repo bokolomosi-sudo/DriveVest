@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, KeyRound, Lock, MapPin, Phone, ShieldCheck, Unlock, Wallet } from 'lucide-react';
 import { OperationsList } from '../../components/finance/WalletForms';
+import { PaymentName } from '../../components/finance/PaymentLogo';
 import { PageMeta } from '../../components/PageMeta';
 import { Badge } from '../../components/ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
@@ -203,7 +204,7 @@ export default function AdminUserDetailPage() {
         {o?.withdrawal_account ? (
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div><dt className="text-xs text-slate-500">Bénéficiaire</dt><dd className="font-semibold">{o.withdrawal_account.holder_name}</dd></div>
-            <div><dt className="text-xs text-slate-500">Numéro {o.withdrawal_account.network}</dt><dd className="font-mono font-semibold">{o.withdrawal_account.airtel_number}</dd></div>
+            <div><dt className="text-xs text-slate-500"><PaymentName name={o.withdrawal_account.network} className="h-4 w-4" /></dt><dd className="font-mono font-semibold">{o.withdrawal_account.airtel_number}</dd></div>
             <div><dt className="text-xs text-slate-500">Configuré le</dt><dd>{formatDate(o.withdrawal_account.created_at)}</dd></div>
             <div>
               <dt className="text-xs text-slate-500">Mot de passe de retrait</dt>

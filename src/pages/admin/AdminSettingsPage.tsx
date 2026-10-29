@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { TeamRewardTiersEditor } from '../../components/admin/TeamRewardTiersEditor';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
@@ -173,9 +172,6 @@ export default function AdminSettingsPage() {
         <button className="btn-primary" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer les paramètres</button>
       </form>
 
-      <div className="mt-6">
-        <TeamRewardTiersEditor />
-      </div>
     </>
   );
 }

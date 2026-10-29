@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ProofLink } from '../orders/OrderParts';
+import { PaymentName } from '../finance/PaymentLogo';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
@@ -73,7 +74,7 @@ function OperationCard({
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 rounded-2xl bg-slate-50 p-4">
-        <Info label="Opérateur" value={tx.method} />
+        <Info label="Opérateur" value={tx.method && <PaymentName name={tx.method} className="h-5 w-5" />} />
         {kind === 'withdrawal' ? (
           <>
             <Info label="Numéro" value={<span className="underline underline-offset-2">{number}</span>} mono />

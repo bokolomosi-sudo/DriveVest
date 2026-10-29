@@ -6,16 +6,29 @@ import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
 import { adminUpdateSettings } from '../../services/content';
 
-type RuleKey = 'min_deposit' | 'min_withdrawal' | 'withdrawal_fee_percent';
+type RuleKey =
+  | 'min_deposit'
+  | 'min_withdrawal'
+  | 'withdrawal_fee_percent'
+  | 'referral_commission_percent'
+  | 'referral_level2_percent'
+  | 'referral_level3_percent'
+  | 'signup_bonus';
 
 const LABELS: Record<RuleKey, string> = {
   min_deposit: 'Dépôt minimum (FC)',
   min_withdrawal: 'Retrait minimum (FC)',
   withdrawal_fee_percent: 'Frais de retrait (%)',
+  referral_commission_percent: 'Niveau 1 (%)',
+  referral_level2_percent: 'Niveau 2 (%)',
+  referral_level3_percent: 'Niveau 3 (%)',
+  signup_bonus: "Bonus d'inscription (FC)",
 };
 
-/** Règles chiffrées du dépôt ou du retrait, modifiables sans quitter l'onglet. */
-export function WalletRulesCard({ title, keys }: { title: string; keys: RuleKey[] }) {
+const PERCENT_KEYS: RuleKey[] = ['withdrawal_fee_percent', 'referral_commission_percent', 'referral_level2_percent', 'referral_level3_percent'];
+
+/** Règles chiffrées (dépôt, retrait, parrainage, bonus), modifiables sur place. */
+export function WalletRulesCard({ title, keys, hint }: { title: string; keys: RuleKey[]; hint?: string }) {
   const { user } = useAuth();
   const { settings, reload } = useSettings();
   const { notify } = useToast();
@@ -33,7 +46,7 @@ export function WalletRulesCard({ title, keys }: { title: string; keys: RuleKey[
     const payload: Record<string, number> = {};
     for (const k of keys) {
       const v = Number(values[k]);
-      if (!Number.isFinite(v) || v < 0 || (k === 'withdrawal_fee_percent' && v > 100)) return setError(`${LABELS[k]} : valeur invalide.`);
+      if (!Number.isFinite(v) || v < 0 || (PERCENT_KEYS.includes(k) && v > 100)) return setError(`${LABELS[k]} : valeur invalide.`);
       payload[k] = v;
     }
     setBusy(true);
@@ -51,7 +64,9 @@ export function WalletRulesCard({ title, keys }: { title: string; keys: RuleKey[
 
   return (
     <form onSubmit={save} className="mb-5 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <p className="mb-3 font-semibold text-slate-900">{title}</p>
+      <p className="font-semibold text-slate-900">{title}</p>
+      {hint && <p className="text-sm text-slate-500">{hint}</p>}
+      <div className="mb-3" />
       <div className="grid gap-3 sm:grid-cols-3">
         {keys.map((k) => (
           <label key={k} className="block">
@@ -59,8 +74,8 @@ export function WalletRulesCard({ title, keys }: { title: string; keys: RuleKey[
             <input
               type="number"
               min={0}
-              max={k === 'withdrawal_fee_percent' ? 100 : undefined}
-              step="1"
+              max={PERCENT_KEYS.includes(k) ? 100 : undefined}
+              step={PERCENT_KEYS.includes(k) ? '0.1' : '1'}
               inputMode="numeric"
               className="input"
               value={values[k] ?? ''}

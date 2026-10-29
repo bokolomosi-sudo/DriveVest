@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { Plus, Smartphone, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Modal } from '../ui/Modal';
 import { WalletRulesCard } from './WalletRulesCard';
+import { PaymentLogo } from '../finance/PaymentLogo';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
@@ -88,7 +89,7 @@ export function WithdrawalNetworksManager() {
           {networks.data.map((n) => (
             <li key={n.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
               <div className="flex min-w-0 items-center gap-3">
-                <Smartphone className="h-5 w-5 shrink-0 text-green-700" aria-hidden="true" />
+                <PaymentLogo name={n.name} className="h-7 w-7" />
                 <p className="truncate font-semibold text-slate-900">{n.name}</p>
                 <Badge tone={n.is_active ? 'success' : 'neutral'}>{n.is_active ? 'Proposé' : 'Masqué'}</Badge>
               </div>

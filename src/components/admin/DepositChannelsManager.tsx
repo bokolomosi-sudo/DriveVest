@@ -5,6 +5,7 @@ import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feed
 import { Field } from '../ui/Field';
 import { Modal } from '../ui/Modal';
 import { WalletRulesCard } from './WalletRulesCard';
+import { PaymentName } from '../finance/PaymentLogo';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
@@ -100,7 +101,7 @@ export function DepositChannelsManager() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-bold text-slate-900">{c.name}</p>
+                    <p className="font-bold text-slate-900"><PaymentName name={c.name} className="h-6 w-6" /></p>
                     <Badge tone={c.is_active ? 'success' : 'neutral'}>{c.is_active ? 'Visible' : 'Masqué'}</Badge>
                   </div>
                   <p className="font-mono text-lg font-bold text-green-800">{c.account_number}</p>

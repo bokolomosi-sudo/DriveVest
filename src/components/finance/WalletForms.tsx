@@ -1,10 +1,11 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Circle, Phone, Smartphone, Upload, Wallet } from 'lucide-react';
+import { CheckCircle2, Circle, Phone, Upload, Wallet } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
 import { PasswordField } from '../ui/PhoneField';
+import { PaymentLogo, PaymentName } from './PaymentLogo';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -107,7 +108,7 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
             onClick={() => setChannelId(c.id)}
             className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${c.id === channel.id ? 'bg-white text-green-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <Smartphone className="h-4 w-4 text-red-600" aria-hidden="true" />
+            <PaymentLogo name={c.name} className="h-6 w-6" />
             {c.name}
           </button>
         ))}
@@ -130,7 +131,9 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
 
       {/* Instructions de paiement */}
       <div className="space-y-4 rounded-2xl border border-green-200 bg-green-50/60 p-4">
-        <p className="text-base font-bold text-green-900">Effectuez le paiement vers {channel.name}</p>
+        <p className="flex items-center gap-2 text-base font-bold text-green-900">
+          <PaymentLogo name={channel.name} className="h-7 w-7" /> Effectuez le paiement vers {channel.name}
+        </p>
         <div>
           <p className="text-sm text-slate-500">Montant total payable</p>
           <p className="text-2xl font-extrabold text-green-900">{validAmount ? formatPrice(value, CURRENCY) : '— FC'}</p>
@@ -253,7 +256,7 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
                 onClick={() => setNetworkName(n.name)}
                 className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${network === n.name ? 'border-green-600 bg-green-50 text-green-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
-                <Smartphone className="h-4 w-4" aria-hidden="true" /> {n.name}
+                <PaymentLogo name={n.name} className="h-5 w-5" /> {n.name}
               </button>
             ))}
           </div>
@@ -292,7 +295,7 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
 export function WithdrawalAccountCard({ account }: { account: WithdrawalAccount }) {
   return (
     <div className="card space-y-3 p-5">
-      <p className="text-sm text-slate-500">Compte {account.network}</p>
+      <p className="text-sm text-slate-500"><PaymentName name={account.network} className="h-5 w-5" /></p>
       <dl className="space-y-2 text-sm">
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Titulaire</dt><dd className="font-semibold">{account.holder_name}</dd></div>
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Numéro</dt><dd className="font-semibold">{formatLocalPhone(account.airtel_number)}</dd></div>
@@ -442,7 +445,7 @@ export function WithdrawalForm({
             <div className="flex justify-between gap-3"><dt className="text-slate-500">Montant demandé</dt><dd className="font-semibold">{formatPrice(value, CURRENCY)}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">Frais ({feePercent} %)</dt><dd>−{formatPrice(fee, CURRENCY)}</dd></div>
             <div className="flex justify-between gap-3 border-t border-slate-200 pt-2 text-base font-bold"><dt>Vous recevez</dt><dd className="text-accent-700">{formatPrice(value - fee, CURRENCY)}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-slate-500">Vers</dt><dd className="text-right font-medium">{account.network} · {account.holder_name} · {formatLocalPhone(account.airtel_number)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">Vers</dt><dd className="text-right font-medium"><PaymentName name={account.network} className="h-4 w-4" /> · {account.holder_name} · {formatLocalPhone(account.airtel_number)}</dd></div>
           </dl>
           <Field label="Mot de passe de retrait" htmlFor="wd-password" required>
             <PasswordField id="wd-password" value={password} onChange={setPassword} placeholder="Mot de passe de retrait" autoComplete="current-password" autoFocus />
@@ -505,7 +508,7 @@ export function OperationsList({ operations, emptyTitle }: { operations: Transac
               {t.direction === 'credit' ? '+' : '−'}{formatPrice(Number(t.amount), t.currency)}
             </p>
             <p className="text-xs text-slate-500">{formatDate(t.created_at, true)}</p>
-            {t.method && <p className="text-xs text-slate-500">{t.method}{t.destination ? ` · ${t.destination}` : ''}</p>}
+            {t.method && <p className="text-xs text-slate-500"><PaymentName name={t.method} className="h-4 w-4" />{t.destination ? ` · ${t.destination}` : ''}</p>}
             {t.type === 'deposit' && t.external_reference && <p className="font-mono text-xs text-slate-500">Réf. {t.external_reference}</p>}
             {t.rejection_reason && <p className="mt-1 text-xs text-red-700">Motif : {t.rejection_reason}</p>}
           </div>
