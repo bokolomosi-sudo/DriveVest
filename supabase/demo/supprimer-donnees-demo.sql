@@ -10,6 +10,7 @@ create temporary table demo_users on commit drop as
   select id from public.profiles where phone like '2439900010%';
 
 delete from public.team_reward_grants where user_id in (select id from demo_users);
+delete from public.product_revenue_payouts where user_id in (select id from demo_users);
 delete from public.referral_commissions
   where referrer_id in (select id from demo_users) or referred_id in (select id from demo_users);
 -- Frais liés aux retraits d'abord, puis le reste des opérations
@@ -21,6 +22,9 @@ delete from public.orders where user_id in (select id from demo_users);
 delete from auth.users where id in (select id from demo_users);
 
 -- Le produit démo est supprimé, sauf si un vrai membre l'a acheté : il est alors archivé
+delete from public.product_revenue_distributions d using public.vehicles v
+  where d.vehicle_id = v.id and v.brand = 'City Car' and v.model = '(DÉMO)'
+    and not exists (select 1 from public.product_revenue_payouts p where p.distribution_id = d.id);
 delete from public.vehicles v
   where v.brand = 'City Car' and v.model = '(DÉMO)'
     and not exists (select 1 from public.order_items i where i.vehicle_id = v.id);

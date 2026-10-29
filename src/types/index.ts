@@ -147,6 +147,8 @@ export interface Vehicle {
   color: string | null;
   seats: number | null;
   duration_days: number | null;
+  /** Plafond du revenu journalier par unité achetée (FC) */
+  daily_revenue_cap: number | null;
   availability: AvailabilityStatus;
   location: string | null;
   delivery_terms: string | null;
@@ -481,4 +483,29 @@ export interface WithdrawalNetwork {
   name: string;
   is_active: boolean;
   sort_order: number;
+}
+
+/** Revenu journalier d'un produit déclaré par l'admin et partagé entre les acheteurs */
+export interface ProductRevenueDistribution {
+  id: string;
+  vehicle_id: string;
+  revenue_date: string;
+  declared_amount: number;
+  daily_cap: number;
+  units: number;
+  per_unit: number;
+  paid_total: number;
+  retained: number;
+  note: string | null;
+  created_at: string;
+  vehicle?: { brand: string; model: string } | null;
+}
+
+/** Revenu reçu par le membre connecté */
+export interface MyProductRevenue {
+  order_id: string;
+  vehicle_label: string;
+  revenue_date: string;
+  amount: number;
+  created_at: string;
 }

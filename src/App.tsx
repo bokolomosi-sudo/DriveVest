@@ -13,6 +13,7 @@ import {
   ScrollText,
   Settings,
   SlidersHorizontal,
+  TrendingUp,
   ShieldCheck,
   ShoppingBag,
   Tags,
@@ -65,6 +66,7 @@ const AdminAnnouncementsPage = lazyPage(() => import('./pages/admin/AdminAnnounc
 const AdminAuditPage = lazyPage(() => import('./pages/admin/AdminAuditPage'));
 const AdminSettingsPage = lazyPage(() => import('./pages/admin/AdminSettingsPage'));
 const AdminRulesPage = lazyPage(() => import('./pages/admin/AdminRulesPage'));
+const AdminRevenuePage = lazyPage(() => import('./pages/admin/AdminRevenuePage'));
 const AdminWalletPage = lazyPage(() => import('./pages/admin/AdminWalletPage'));
 
 function accountNav(s: PlatformSettings | null): SideNavItem[] {
@@ -94,6 +96,7 @@ const ADMIN_NAV: SideNavItem[] = [
   { to: '/admin/finances', label: 'Paiements', icon: CreditCard },
   { to: '/admin/portefeuilles', label: 'Dépôts et retraits', icon: Wallet },
   { to: '/admin/regles', label: 'Règles et bonus', icon: SlidersHorizontal },
+  { to: '/admin/revenus', label: 'Revenus des produits', icon: TrendingUp },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { to: '/admin/support', label: 'Service client', icon: LifeBuoy },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone },
@@ -172,6 +175,7 @@ export default function App() {
           <Route path="audit" element={<AdminAuditPage />} />
           <Route path="parametres" element={<AdminSettingsPage />} />
           <Route path="regles" element={<AdminRulesPage />} />
+          <Route path="revenus" element={<AdminRevenuePage />} />
           <Route path="portefeuilles" element={<AdminWalletPage />} />
         </Route>
 

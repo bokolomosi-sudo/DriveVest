@@ -40,7 +40,7 @@ import type {
 
 type FormState = Record<
   | 'category_id' | 'brand' | 'model' | 'year' | 'description' | 'price' | 'currency' | 'condition'
-  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'availability' | 'location'
+  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'daily_revenue_cap' | 'availability' | 'location'
   | 'delivery_terms' | 'seller_name' | 'seller_details' | 'status',
   string
 >;
@@ -62,6 +62,7 @@ function toForm(v: Vehicle | null, _currency: string): FormState {
     color: v?.color ?? '',
     seats: v?.seats?.toString() ?? '',
     duration_days: v?.duration_days?.toString() ?? '',
+    daily_revenue_cap: v?.daily_revenue_cap?.toString() ?? '',
     availability: v?.availability ?? 'available',
     location: v?.location ?? '',
     delivery_terms: v?.delivery_terms ?? '',
@@ -91,6 +92,7 @@ function toInput(f: FormState): VehicleInput {
     color: text(f.color),
     seats: num(f.seats),
     duration_days: num(f.duration_days),
+    daily_revenue_cap: num(f.daily_revenue_cap),
     availability: f.availability as AvailabilityStatus,
     location: text(f.location),
     delivery_terms: text(f.delivery_terms),
@@ -108,6 +110,7 @@ function validate(i: VehicleInput): string | null {
   if (i.mileage_km !== null && (!Number.isInteger(i.mileage_km) || i.mileage_km < 0)) return 'Kilométrage invalide.';
   if (i.seats !== null && (!Number.isInteger(i.seats) || i.seats < 1 || i.seats > 100)) return 'Nombre de places invalide.';
   if (i.duration_days !== null && (!Number.isInteger(i.duration_days) || i.duration_days < 1)) return 'Durée invalide (nombre de jours).';
+  if (i.daily_revenue_cap !== null && (!Number.isFinite(i.daily_revenue_cap) || i.daily_revenue_cap < 0)) return 'Plafond de revenu journalier invalide.';
   if (i.status === 'published' && !i.category_id) return 'Choisissez une catégorie avant de publier.';
   if (i.status === 'published' && (!i.price || i.price <= 0)) return 'Indiquez le prix avant de publier ce produit.';
   if (i.status === 'published' && !i.duration_days) return 'Indiquez la durée avant de publier ce produit.';
@@ -347,6 +350,9 @@ export default function AdminVehicleFormPage() {
             </Field>
             <Field label="Durée (jours)" htmlFor="v-duration" hint="Obligatoire pour publier. Sert à calculer la date d'expiration.">
               <input id="v-duration" type="number" min={1} className="input" value={form.duration_days} onChange={set('duration_days')} />
+            </Field>
+            <Field label="Plafond de revenu journalier (FC)" htmlFor="v-cap" hint="Maximum versé par jour et par produit acheté, selon les revenus réels déclarés. Vide = pas de revenu journalier.">
+              <input id="v-cap" type="number" min={0} step="1" className="input" value={form.daily_revenue_cap} onChange={set('daily_revenue_cap')} />
             </Field>
             <Field label="Disponibilité" htmlFor="v-avail">
               <select id="v-avail" className="input" value={form.availability} onChange={set('availability')}>

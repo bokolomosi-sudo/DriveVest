@@ -379,5 +379,33 @@ ub.rows.length === 2 && Number(ub.rows.find((r) => r.user_id === C).balance) ===
   : fail('soldes liste', JSON.stringify(ub.rows));
 await expectError('soldes des autres interdits aux membres', () => as(C, `select * from admin_users_balances($1)`, [[R3]]), /administrateurs/);
 
+console.log('20. Revenu journalier plafonné');
+const today = (await db.query(`select (now() at time zone 'Africa/Kinshasa')::date::text as d`)).rows[0].d;
+await expectError('déclaration sans plafond refusée', () => as(ADMIN, `select admin_distribute_product_revenue($1, $2::date, 5000)`, [vehicleId, today]), /plafond/);
+await db.exec(`update vehicles set daily_revenue_cap = 100 where id = '${vehicleId}'`);
+await expectError('un membre ne déclare pas de revenu', () => as(B, `select admin_distribute_product_revenue($1, $2::date, 5000)`, [vehicleId, today]), /administrateurs/);
+await expectError('revenu d\'un jour futur refusé', () => as(ADMIN, `select admin_distribute_product_revenue($1, ($2::date + 1), 5000)`, [vehicleId, today]), /jour passé/);
+await expectError('aucun acheteur actif la veille', () => as(ADMIN, `select admin_distribute_product_revenue($1, ($2::date - 1), 5000)`, [vehicleId, today]), /Aucun acheteur/);
+const prev = (await as(ADMIN, `select admin_product_revenue_preview($1, $2::date) as p`, [vehicleId, today])).rows[0].p;
+const unitsActive = prev.units;
+unitsActive > 0 && Number(prev.daily_cap) === 100 ? ok(`aperçu : ${unitsActive} unités actives, plafond 100 FC`) : fail('aperçu', JSON.stringify(prev));
+const beforeRev = await bal(B, 'CDF');
+const dist = (await as(ADMIN, `select * from admin_distribute_product_revenue($1, $2::date, 100000, 'Test')`, [vehicleId, today])).rows[0];
+const afterRev = await bal(B, 'CDF');
+Number(dist.per_unit) === 100 && afterRev - beforeRev === 100 && Number(dist.retained) === 100000 - 100 * unitsActive
+  ? ok('revenu élevé : chacun reçoit le plafond (100 FC), le reste est conservé')
+  : fail('plafond', JSON.stringify({ dist, diff: afterRev - beforeRev }));
+await expectError('un seul partage par jour et par produit', () => as(ADMIN, `select admin_distribute_product_revenue($1, $2::date, 5000)`, [vehicleId, today]), /déjà été déclaré/);
+const mine = await as(B, `select * from my_product_revenues()`);
+mine.rows.length === 1 && Number(mine.rows[0].amount) === 100 ? ok('le membre voit son revenu du jour') : fail('my_product_revenues', JSON.stringify(mine.rows));
+const hidden = await as(B, `select count(*)::int as n from product_revenue_distributions`);
+hidden.rows[0].n === 0 ? ok('les déclarations restent réservées à l\'admin') : fail('rls distributions', hidden.rows[0].n);
+// Revenu faible : partage proportionnel sous le plafond (nouveau produit, jour suivant simulé)
+await db.exec(`update orders set created_at = created_at - interval '1 day' where id in (select o.id from orders o join order_items i on i.order_id = o.id where i.vehicle_id = '${vehicleId}')`);
+const small = (await as(ADMIN, `select * from admin_distribute_product_revenue($1, ($2::date - 1), $3)`, [vehicleId, today, 10 * unitsActive])).rows[0];
+Number(small.per_unit) === 10 && Number(small.retained) === 0
+  ? ok('revenu faible : 10 FC par unité, sous le plafond, rien n\'est inventé')
+  : fail('revenu faible', JSON.stringify(small));
+
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

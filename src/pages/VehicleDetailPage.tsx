@@ -201,6 +201,15 @@ export default function VehicleDetailPage() {
             {vehicle.duration_days && (
               <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600"><Clock className="h-4 w-4" /> Durée : {vehicle.duration_days} jours</p>
             )}
+            {Number(vehicle.daily_revenue_cap) > 0 && (
+              <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-900">
+                <p className="font-semibold">Revenu journalier : jusqu'à {formatPrice(Number(vehicle.daily_revenue_cap), vehicle.currency)} par jour</p>
+                <p className="mt-1 text-xs text-green-800">
+                  Chaque jour, Drivest partage les recettes réelles de ce produit entre ses acheteurs, sans dépasser ce plafond.
+                  Si le produit ne rapporte rien un jour, rien n'est versé : le revenu n'est pas garanti.
+                </p>
+              </div>
+            )}
             <button className="btn-primary mt-5 w-full py-3 text-base" onClick={openBuy} disabled={!orderable}>
               <Wallet className="h-5 w-5" /> Acheter avec mon solde Drivest
             </button>

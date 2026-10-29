@@ -119,6 +119,7 @@ export type VehicleInput = Pick<
   | 'color'
   | 'seats'
   | 'duration_days'
+  | 'daily_revenue_cap'
   | 'availability'
   | 'location'
   | 'delivery_terms'
