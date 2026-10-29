@@ -1,176 +1,232 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Coins, Play, RefreshCw, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
-import { Field } from '../../components/ui/Field';
-import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
-import { adminDistributeRevenue, adminListDistributions, adminRevenuePreview, todayInKinshasa } from '../../services/revenue';
+import { productYield } from '../../lib/productYield';
+import { adminListDailyCredits, creditDueProductRevenues } from '../../services/revenue';
 import { adminListVehicles } from '../../services/vehicles';
-
-/** Ce que l'acheteur recevra : le revenu partagé entre les unités, jamais au-delà du plafond. */
-function perUnit(amount: number, units: number, cap: number): number {
-  if (units <= 0 || amount <= 0) return 0;
-  return Math.min(cap, Math.floor((amount / units) * 100) / 100);
-}
 
 export default function AdminRevenuePage() {
   const { notify } = useToast();
   const vehicles = useAsync(() => adminListVehicles('all'), []);
-  const history = useAsync(adminListDistributions, []);
-  const products = (vehicles.data ?? []).filter((v) => Number(v.daily_revenue_cap) > 0);
+  const credits = useAsync(adminListDailyCredits, []);
+  const [running, setRunning] = useState(false);
 
-  const [vehicleId, setVehicleId] = useState('');
-  const [date, setDate] = useState(todayInKinshasa());
-  const [amount, setAmount] = useState('');
-  const [note, setNote] = useState('');
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const selected = products.find((v) => v.id === vehicleId) ?? null;
-  const preview = useAsync(
-    () => (vehicleId && date ? adminRevenuePreview(vehicleId, date) : Promise.resolve(null)),
-    [vehicleId, date],
+  const revenueProducts = (vehicles.data ?? []).filter(
+    (v) => Number(v.daily_revenue_percent) > 0 && Number(v.price) > 0,
   );
-  const value = Number(amount);
-  const cap = Number(selected?.daily_revenue_cap ?? 0);
-  const units = preview.data?.units ?? 0;
-  const share = perUnit(value, units, cap);
-  const paid = share * units;
 
-  const open = (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!selected) return setError('Choisissez un produit.');
-    if (!(value > 0)) return setError('Indiquez le revenu réellement encaissé.');
-    if (preview.data?.already_declared) return setError('Le revenu de ce produit est déjà déclaré pour ce jour.');
-    if (units === 0) return setError("Aucun acheteur n'a ce produit actif à cette date.");
-    if (share <= 0) return setError('Revenu trop faible pour être partagé.');
-    setConfirming(true);
-  };
+  const totalDistributed = (credits.data ?? []).reduce((sum, c) => sum + c.amount, 0);
 
-  const submit = async () => {
-    if (busy || !selected) return;
-    setBusy(true);
-    setError(null);
+  const runCreditsNow = async () => {
+    if (running) return;
+    setRunning(true);
     try {
-      const d = await adminDistributeRevenue({ vehicleId: selected.id, date, amount: value, note });
-      notify('success', `${formatPrice(Number(d.paid_total), CURRENCY)} versés à ${d.units} produit(s) actif(s).`);
-      setConfirming(false);
-      setAmount('');
-      setNote('');
-      await Promise.all([history.reload(), preview.reload()]);
+      const credited = await creditDueProductRevenues();
+      if (credited > 0) {
+        notify('success', `${credited} versement(s) quotidien(s) effectué(s) avec succès.`);
+      } else {
+        notify('info', 'Aucun versement n’était en attente à cette heure.');
+      }
+      await credits.reload();
     } catch (err) {
-      setError(toErrorMessage(err));
-      setConfirming(false);
+      notify('error', toErrorMessage(err));
     } finally {
-      setBusy(false);
+      setRunning(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <PageMeta title="Revenus des produits — Administration" noindex />
+    <div className="mx-auto max-w-5xl space-y-6">
+      <PageMeta title="Revenus automatiques — Administration" noindex />
       <PageHeader
         title="Revenus des produits"
-        description="Déclarez chaque jour ce qu'un produit a réellement rapporté : le site le partage entre ses acheteurs, sans dépasser le plafond journalier."
+        description="Distribution automatique des revenus quotidiens aux acheteurs selon les paramètres configurés."
+        actions={
+          <div className="flex gap-2">
+            <button
+              onClick={runCreditsNow}
+              disabled={running}
+              className="btn-primary flex items-center gap-1.5"
+            >
+              {running ? <Spinner className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
+              Lancer les versements dus
+            </button>
+            <Link to="/admin/vehicules" className="btn-secondary flex items-center gap-1.5">
+              <SlidersHorizontal className="h-4 w-4" /> Gérer les produits
+            </Link>
+          </div>
+        }
       />
 
-      <form onSubmit={open} className="mb-6 space-y-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        {vehicles.loading ? <LoadingState /> : vehicles.error ? <ErrorState message={vehicles.error} onRetry={vehicles.reload} /> : products.length === 0 ? (
-          <Alert tone="warning">
-            Aucun produit n'a de plafond de revenu journalier. Fixez-le dans la fiche du produit (
-            <Link to="/admin/vehicules" className="font-semibold underline">Véhicules</Link>), champ « Plafond de revenu journalier ».
-          </Alert>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center gap-2 text-slate-500">
+            <TrendingUp className="h-4 w-4 text-green-600" />
+            <span className="text-xs font-medium">Total distribué</span>
+          </div>
+          <p className="mt-2 text-2xl font-black text-green-700">{formatPrice(totalDistributed, CURRENCY)}</p>
+          <p className="mt-0.5 text-xs text-slate-400">Depuis l&apos;activation des versements automatiques</p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Coins className="h-4 w-4 text-night-600" />
+            <span className="text-xs font-medium">Versements enregistrés</span>
+          </div>
+          <p className="mt-2 text-2xl font-black text-slate-900">{credits.data?.length ?? 0}</p>
+          <p className="mt-0.5 text-xs text-slate-400">Transactions journalières créditées</p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <div className="flex items-center gap-2 text-slate-500">
+            <SlidersHorizontal className="h-4 w-4 text-night-600" />
+            <span className="text-xs font-medium">Produits à revenu actif</span>
+          </div>
+          <p className="mt-2 text-2xl font-black text-slate-900">{revenueProducts.length}</p>
+          <p className="mt-0.5 text-xs text-slate-400">Avec pourcentage quotidien défini</p>
+        </div>
+      </div>
+
+      <Alert tone="info">
+        <strong>Fonctionnement automatisé :</strong> Les versements quotidiens se font automatiquement
+        24h après chaque achat de produit, chaque jour à la même heure, jusqu&apos;à expiration de la durée
+        du produit. Vous n&apos;avez plus besoin de saisir manuellement les recettes chaque jour. Vous pouvez
+        simplement configurer le prix, la durée et le pourcentage directement dans la fiche de chaque produit.
+      </Alert>
+
+      {/* Tableau des produits configurés et simulations */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Rendements configurés sur les produits</h2>
+          <Link to="/admin/vehicules/nouveau" className="text-xs font-semibold text-night-800 hover:underline">
+            + Ajouter un produit
+          </Link>
+        </div>
+
+        {vehicles.loading ? (
+          <LoadingState />
+        ) : vehicles.error ? (
+          <ErrorState message={vehicles.error} onRetry={vehicles.reload} />
+        ) : revenueProducts.length === 0 ? (
+          <EmptyState
+            title="Aucun produit avec revenu quotidien"
+            description="Configurez le pourcentage de revenu et la durée sur un véhicule pour activer les versements automatiques."
+            action={<Link to="/admin/vehicules" className="btn-primary">Voir les véhicules</Link>}
+          />
         ) : (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Produit" htmlFor="rv-product" required>
-                <select id="rv-product" className="input" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-                  <option value="">Choisir…</option>
-                  {products.map((v) => (
-                    <option key={v.id} value={v.id}>{v.brand} {v.model} — plafond {formatPrice(Number(v.daily_revenue_cap), CURRENCY)}/jour</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Jour du revenu" htmlFor="rv-date" required>
-                <input id="rv-date" type="date" className="input" max={todayInKinshasa()} value={date} onChange={(e) => setDate(e.target.value)} />
-              </Field>
-              <Field label="Revenu réellement encaissé (FC)" htmlFor="rv-amount" required hint="Le montant total que ce produit a rapporté ce jour-là.">
-                <input id="rv-amount" type="number" min={0} step="1" inputMode="numeric" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              </Field>
-              <Field label="Justificatif / note" htmlFor="rv-note" hint="Ex. : recette de location du jour, reçu n°…">
-                <input id="rv-note" className="input" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
-              </Field>
-            </div>
-
-            {selected && (
-              <dl className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-4">
-                <div><dt className="text-xs text-slate-500">Produits actifs</dt><dd className="font-semibold">{preview.loading ? '…' : units}</dd></div>
-                <div><dt className="text-xs text-slate-500">Par produit</dt><dd className="font-semibold text-green-700">{formatPrice(share, CURRENCY)}</dd></div>
-                <div><dt className="text-xs text-slate-500">Total versé</dt><dd className="font-semibold">{formatPrice(paid, CURRENCY)}</dd></div>
-                <div><dt className="text-xs text-slate-500">Gardé par Drivest</dt><dd className="font-semibold">{formatPrice(Math.max(value - paid, 0), CURRENCY)}</dd></div>
-              </dl>
-            )}
-            {preview.data?.already_declared && <Alert tone="info">Le revenu de ce produit est déjà déclaré pour ce jour.</Alert>}
-            {error && <Alert tone="danger">{error}</Alert>}
-            <button className="btn bg-green-700 text-white hover:bg-green-800" disabled={busy}>Distribuer le revenu</button>
-          </>
-        )}
-      </form>
-
-      <h2 className="mb-3 text-lg font-semibold">Historique des distributions</h2>
-      {history.loading ? <LoadingState /> : history.error ? <ErrorState message={history.error} onRetry={history.reload} /> : !history.data?.length ? (
-        <EmptyState title="Aucun revenu distribué" />
-      ) : (
-        <ul className="space-y-2">
-          {history.data.map((d) => (
-            <li key={d.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-slate-900">{d.vehicle ? `${d.vehicle.brand} ${d.vehicle.model}` : 'Produit'}</p>
-                  <p className="text-xs text-slate-500">Revenu du {formatDate(d.revenue_date)}{d.note ? ` · ${d.note}` : ''}</p>
-                </div>
-                <p className="text-right text-sm">
-                  <span className="font-bold text-green-700">{formatPrice(d.paid_total, CURRENCY)} versés</span>
-                  <br />
-                  <span className="text-xs text-slate-500">{d.units} × {formatPrice(d.per_unit, CURRENCY)} · déclaré {formatPrice(d.declared_amount, CURRENCY)} · gardé {formatPrice(d.retained, CURRENCY)}</span>
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Modal
-        open={confirming}
-        title="Confirmer la distribution"
-        onClose={() => !busy && setConfirming(false)}
-        footer={
-          <>
-            <button className="btn-secondary" onClick={() => setConfirming(false)} disabled={busy}>Annuler</button>
-            <button className="btn bg-green-700 text-white hover:bg-green-800" onClick={submit} disabled={busy}>
-              {busy && <Spinner className="h-4 w-4" />} Distribuer
-            </button>
-          </>
-        }
-      >
-        {selected && (
-          <div className="space-y-3 text-sm">
-            <p><strong>{selected.brand} {selected.model}</strong> — revenu du {formatDate(date)}</p>
-            <p>
-              Revenu déclaré {formatPrice(value, CURRENCY)} : {units} produit(s) actif(s) recevront chacun{' '}
-              <strong>{formatPrice(share, CURRENCY)}</strong>, soit {formatPrice(paid, CURRENCY)} au total.
-            </p>
-            <Alert tone="warning">Déclarez uniquement un revenu réellement encaissé. Une distribution ne peut pas être annulée.</Alert>
+          <div className="card overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Prix d&apos;achat</th>
+                  <th>Durée</th>
+                  <th>% / jour</th>
+                  <th>Revenu / jour</th>
+                  <th>Cumul brut</th>
+                  <th>Après 5 %</th>
+                  <th>Gain net</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {revenueProducts.map((v) => {
+                  const y = productYield(v.price, v.duration_days, v.daily_revenue_percent, 5);
+                  return (
+                    <tr key={v.id}>
+                      <td className="font-semibold text-slate-900">
+                        {v.brand} {v.model}
+                      </td>
+                      <td className="whitespace-nowrap font-medium">{formatPrice(v.price, v.currency)}</td>
+                      <td className="whitespace-nowrap">{v.duration_days ?? 0} jours</td>
+                      <td className="whitespace-nowrap font-bold text-green-700">{v.daily_revenue_percent} %</td>
+                      <td className="whitespace-nowrap font-bold text-green-700">
+                        {y ? formatPrice(y.daily, v.currency) : '—'}
+                      </td>
+                      <td className="whitespace-nowrap text-slate-600">{y ? formatPrice(y.gross, v.currency) : '—'}</td>
+                      <td className="whitespace-nowrap text-slate-600">{y ? formatPrice(y.afterFees, v.currency) : '—'}</td>
+                      <td className="whitespace-nowrap font-bold text-green-700">
+                        {y ? `+${formatPrice(y.net, v.currency)}` : '—'}
+                      </td>
+                      <td className="text-right">
+                        <Link to={`/admin/vehicules/${v.id}`} className="btn-secondary btn-sm">
+                          Modifier
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </Modal>
+      </section>
+
+      {/* Historique des versements automatiques */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Historique des versements automatiques</h2>
+          <button
+            onClick={() => credits.reload()}
+            className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Actualiser
+          </button>
+        </div>
+
+        {credits.loading ? (
+          <LoadingState />
+        ) : credits.error ? (
+          <ErrorState message={credits.error} onRetry={credits.reload} />
+        ) : !credits.data?.length ? (
+          <EmptyState
+            title="Aucun versement automatique encore effectué"
+            description="Les versements apparaîtront ici dès que les 24h suivant le premier achat d'un produit seront atteintes."
+          />
+        ) : (
+          <div className="card overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Date & Heure</th>
+                  <th>Produit</th>
+                  <th>Bénéficiaire</th>
+                  <th>Période</th>
+                  <th className="text-right">Montant crédité</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {credits.data.map((c) => (
+                  <tr key={c.id}>
+                    <td className="whitespace-nowrap text-xs text-slate-600">{formatDate(c.due_at)}</td>
+                    <td className="font-semibold text-slate-900">
+                      {c.vehicle ? `${c.vehicle.brand} ${c.vehicle.model}` : 'Produit'}
+                    </td>
+                    <td className="text-xs text-slate-600">
+                      {c.profile?.full_name || c.profile?.phone || c.user_id.slice(0, 8)}
+                    </td>
+                    <td className="whitespace-nowrap text-xs">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                        Jour {c.period_index}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap text-right font-bold text-green-700">
+                      +{formatPrice(c.amount, CURRENCY)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

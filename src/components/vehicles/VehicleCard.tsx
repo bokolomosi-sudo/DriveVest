@@ -7,7 +7,9 @@ import { toErrorMessage } from '../../lib/errors';
 import { formatDate, formatPrice } from '../../lib/format';
 import { vehicleImageUrl } from '../../services/vehicles';
 import { buyVehicleWithWallet } from '../../services/wallet';
+import { vehicleDailyAmount } from '../../lib/productYield';
 import type { Vehicle } from '../../types';
+import { ProductYieldBlock } from './ProductYield';
 import { VehicleImagePlaceholder } from './VehicleImagePlaceholder';
 
 function InfoPill({ label, value }: { label: string; value: string }) {
@@ -67,7 +69,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             {vehicle.duration_days && <InfoPill label="Durée" value={`${vehicle.duration_days} jours`} />}
             {vehicle.duration_days && <InfoPill label="Expire le" value={expirationDate(vehicle.duration_days)} />}
-            {Number(vehicle.daily_revenue_cap) > 0 && <InfoPill label="Revenu / jour" value={`jusqu'à ${formatPrice(Number(vehicle.daily_revenue_cap), vehicle.currency)}`} />}
+            {vehicleDailyAmount(vehicle) > 0 && <InfoPill label="Revenu / jour" value={formatPrice(vehicleDailyAmount(vehicle), vehicle.currency)} />}
           </div>
           <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-inner min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32">
             {cover ? (
@@ -85,9 +87,9 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           </div>
         </div>
 
-        {Number(vehicle.daily_revenue_cap) > 0 && (
-          <p className="mt-2 text-[11px] leading-snug text-slate-500">Revenu selon les recettes réelles du produit, plafonné par jour. Non garanti.</p>
-        )}
+        <div className="mt-3">
+          <ProductYieldBlock vehicle={vehicle} compact />
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link to={`/vehicules/${vehicle.id}`} className="btn-secondary rounded-xl py-3">
             Plus de détails

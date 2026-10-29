@@ -90,7 +90,7 @@ export default function MyProductsPage() {
       {(revenues.data?.length ?? 0) > 0 && (
         <section className="mt-8">
           <h2 className="mb-1 text-lg font-semibold">Historique des revenus</h2>
-          <p className="mb-3 text-xs text-slate-500">Revenus réels des produits, partagés entre les acheteurs dans la limite du plafond journalier. Aucun montant n'est garanti.</p>
+          <p className="mb-3 text-xs text-slate-500">Revenus quotidiens versés automatiquement à votre portefeuille chaque jour pendant toute la durée de vos produits.</p>
           <ul className="divide-y divide-slate-100 rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
             {revenues.data!.map((r, i) => (
               <li key={`${r.order_id}-${r.revenue_date}-${i}`} className="flex items-center justify-between gap-3 p-3 text-sm">

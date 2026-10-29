@@ -147,7 +147,9 @@ export interface Vehicle {
   color: string | null;
   seats: number | null;
   duration_days: number | null;
-  /** Plafond du revenu journalier par unité achetée (FC) */
+  /** Pourcentage du prix versé chaque jour (ex. 5 = 1 000 FC/jour sur 20 000 FC) */
+  daily_revenue_percent: number | null;
+  /** Montant quotidien correspondant au pourcentage (FC) */
   daily_revenue_cap: number | null;
   availability: AvailabilityStatus;
   location: string | null;
@@ -170,6 +172,8 @@ export interface OrderItem {
   unit_price: number;
   currency: string;
   quantity: number;
+  daily_revenue_percent?: number | null;
+  daily_revenue_amount?: number | null;
   vehicle?: (Pick<Vehicle, 'id' | 'brand' | 'model' | 'duration_days'> & { images?: VehicleImage[] }) | null;
 }
 
@@ -226,6 +230,8 @@ export interface Order {
   customer_note: string | null;
   delivery_address: string | null;
   cancel_reason: string | null;
+  /** Heure d'achat (paiement confirmé) : les versements quotidiens se font à cette heure. */
+  activated_at: string | null;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
@@ -485,20 +491,18 @@ export interface WithdrawalNetwork {
   sort_order: number;
 }
 
-/** Revenu journalier d'un produit déclaré par l'admin et partagé entre les acheteurs */
-export interface ProductRevenueDistribution {
+/** Versement quotidien automatique d'un produit acheté */
+export interface ProductDailyCredit {
   id: string;
+  order_id: string;
+  user_id: string;
   vehicle_id: string;
-  revenue_date: string;
-  declared_amount: number;
-  daily_cap: number;
-  units: number;
-  per_unit: number;
-  paid_total: number;
-  retained: number;
-  note: string | null;
+  period_index: number;
+  due_at: string;
+  amount: number;
   created_at: string;
   vehicle?: { brand: string; model: string } | null;
+  profile?: { full_name: string | null; phone: string | null } | null;
 }
 
 /** Revenu reçu par le membre connecté */

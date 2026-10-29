@@ -119,6 +119,7 @@ export type VehicleInput = Pick<
   | 'color'
   | 'seats'
   | 'duration_days'
+  | 'daily_revenue_percent'
   | 'daily_revenue_cap'
   | 'availability'
   | 'location'
@@ -178,6 +179,16 @@ export async function adminDeleteVehicleImage(image: VehicleImage): Promise<void
   const { error } = await db().from('vehicle_images').delete().eq('id', image.id);
   if (error) throw error;
   if (image.storage_path) await db().storage.from(VEHICLE_IMAGES_BUCKET).remove([image.storage_path]);
+}
+
+export async function adminDeleteVehicle(id: string): Promise<void> {
+  const { error } = await db().from('vehicles').delete().eq('id', id);
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error("Ce produit a déjà des commandes enregistrées. Vous pouvez le désactiver ou l'archiver au lieu de le supprimer.");
+    }
+    throw error;
+  }
 }
 
 export async function adminSetImageOrder(images: VehicleImage[]): Promise<void> {

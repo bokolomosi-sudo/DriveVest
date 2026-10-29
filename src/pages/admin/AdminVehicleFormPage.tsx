@@ -5,6 +5,7 @@ import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
 import { Field } from '../../components/ui/Field';
+import { Modal } from '../../components/ui/Modal';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -20,6 +21,7 @@ import {
 import { adminListCategories } from '../../services/categories';
 import {
   adminAddVehicleImageUrl,
+  adminDeleteVehicle,
   adminDeleteVehicleImage,
   adminSaveVehicle,
   adminSetImageOrder,
@@ -28,6 +30,8 @@ import {
   vehicleImageUrl,
   type VehicleInput,
 } from '../../services/vehicles';
+import { CURRENCY, formatPrice } from '../../lib/format';
+import { productYield } from '../../lib/productYield';
 import type {
   AvailabilityStatus,
   FuelType,
@@ -40,7 +44,7 @@ import type {
 
 type FormState = Record<
   | 'category_id' | 'brand' | 'model' | 'year' | 'description' | 'price' | 'currency' | 'condition'
-  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'daily_revenue_cap' | 'availability' | 'location'
+  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'daily_revenue_percent' | 'availability' | 'location'
   | 'delivery_terms' | 'seller_name' | 'seller_details' | 'status',
   string
 >;
@@ -62,7 +66,7 @@ function toForm(v: Vehicle | null, _currency: string): FormState {
     color: v?.color ?? '',
     seats: v?.seats?.toString() ?? '',
     duration_days: v?.duration_days?.toString() ?? '',
-    daily_revenue_cap: v?.daily_revenue_cap?.toString() ?? '',
+    daily_revenue_percent: v?.daily_revenue_percent?.toString() ?? '',
     availability: v?.availability ?? 'available',
     location: v?.location ?? '',
     delivery_terms: v?.delivery_terms ?? '',
@@ -76,13 +80,15 @@ const text = (s: string) => s.trim() || null;
 const num = (s: string) => (s.trim() === '' ? null : Number(s));
 
 function toInput(f: FormState): VehicleInput {
+  const price = num(f.price);
+  const percent = num(f.daily_revenue_percent);
   return {
     category_id: f.category_id || null,
     brand: f.brand.trim(),
     model: f.model.trim(),
     year: num(f.year),
     description: text(f.description),
-    price: num(f.price),
+    price,
     currency: f.currency.trim().toUpperCase(),
     condition: f.condition as VehicleCondition,
     mileage_km: num(f.mileage_km),
@@ -92,7 +98,8 @@ function toInput(f: FormState): VehicleInput {
     color: text(f.color),
     seats: num(f.seats),
     duration_days: num(f.duration_days),
-    daily_revenue_cap: num(f.daily_revenue_cap),
+    daily_revenue_percent: percent,
+    daily_revenue_cap: price && percent ? Math.round((price * percent) / 100 * 100) / 100 : null,
     availability: f.availability as AvailabilityStatus,
     location: text(f.location),
     delivery_terms: text(f.delivery_terms),
@@ -110,7 +117,9 @@ function validate(i: VehicleInput): string | null {
   if (i.mileage_km !== null && (!Number.isInteger(i.mileage_km) || i.mileage_km < 0)) return 'Kilométrage invalide.';
   if (i.seats !== null && (!Number.isInteger(i.seats) || i.seats < 1 || i.seats > 100)) return 'Nombre de places invalide.';
   if (i.duration_days !== null && (!Number.isInteger(i.duration_days) || i.duration_days < 1)) return 'Durée invalide (nombre de jours).';
-  if (i.daily_revenue_cap !== null && (!Number.isFinite(i.daily_revenue_cap) || i.daily_revenue_cap < 0)) return 'Plafond de revenu journalier invalide.';
+  if (i.daily_revenue_percent !== null && (!Number.isFinite(i.daily_revenue_percent) || i.daily_revenue_percent < 0 || i.daily_revenue_percent > 100)) {
+    return 'Pourcentage de revenu journalier invalide (entre 0 et 100 %).';
+  }
   if (i.status === 'published' && !i.category_id) return 'Choisissez une catégorie avant de publier.';
   if (i.status === 'published' && (!i.price || i.price <= 0)) return 'Indiquez le prix avant de publier ce produit.';
   if (i.status === 'published' && !i.duration_days) return 'Indiquez la durée avant de publier ce produit.';
@@ -236,12 +245,34 @@ export default function AdminVehicleFormPage() {
   const [form, setForm] = useState<FormState>(() => toForm(null, settings?.default_currency ?? 'CDF'));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!vehicle.loading) setForm(toForm(vehicle.data, settings?.default_currency ?? 'CDF'));
   }, [vehicle.data, vehicle.loading, settings?.default_currency]);
 
   const set = (key: keyof FormState) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const livePrice = num(form.price);
+  const liveDuration = num(form.duration_days);
+  const livePercent = num(form.daily_revenue_percent);
+  const previewYield = productYield(livePrice, liveDuration, livePercent, 5);
+
+  const onDelete = async () => {
+    if (!id || deleting) return;
+    setDeleting(true);
+    try {
+      await adminDeleteVehicle(id);
+      notify('success', 'Produit supprimé avec succès.');
+      navigate('/admin/vehicules', { replace: true });
+    } catch (err) {
+      notify('error', toErrorMessage(err));
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -341,24 +372,57 @@ export default function AdminVehicleFormPage() {
           </section>
 
           <section className="card grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
-            <h2 className="text-lg font-semibold sm:col-span-2 lg:col-span-3">Vente</h2>
-            <Field label="Prix affiché" htmlFor="v-price" hint="Obligatoire pour publier le produit.">
-              <input id="v-price" type="number" min={0} step="0.01" className="input" value={form.price} onChange={set('price')} />
+            <h2 className="text-lg font-semibold sm:col-span-2 lg:col-span-3">Vente & Revenu quotidien</h2>
+            <Field label="Prix affiché (FC)" htmlFor="v-price" hint="Obligatoire pour publier le produit.">
+              <input id="v-price" type="number" min={0} step="1" className="input" placeholder="ex. 20000" value={form.price} onChange={set('price')} />
             </Field>
             <Field label="Devise" htmlFor="v-cur" required hint="Franc congolais uniquement.">
               <input id="v-cur" className="input uppercase bg-slate-50" maxLength={3} readOnly value={form.currency} onChange={set('currency')} />
             </Field>
-            <Field label="Durée (jours)" htmlFor="v-duration" hint="Obligatoire pour publier. Sert à calculer la date d'expiration.">
-              <input id="v-duration" type="number" min={1} className="input" value={form.duration_days} onChange={set('duration_days')} />
+            <Field label="Durée (jours)" htmlFor="v-duration" hint="Durée pendant laquelle le revenu est versé (ex. 30).">
+              <input id="v-duration" type="number" min={1} className="input" placeholder="ex. 30" value={form.duration_days} onChange={set('duration_days')} />
             </Field>
-            <Field label="Plafond de revenu journalier (FC)" htmlFor="v-cap" hint="Maximum versé par jour et par produit acheté, selon les revenus réels déclarés. Vide = pas de revenu journalier.">
-              <input id="v-cap" type="number" min={0} step="1" className="input" value={form.daily_revenue_cap} onChange={set('daily_revenue_cap')} />
+            <Field label="Pourcentage de revenu quotidien (%)" htmlFor="v-percent" hint="Versé chaque jour automatiquement (ex. 4 % = 800 FC/jour pour 20 000 FC).">
+              <input id="v-percent" type="number" min={0} max={100} step="0.01" className="input" placeholder="ex. 4" value={form.daily_revenue_percent} onChange={set('daily_revenue_percent')} />
             </Field>
             <Field label="Disponibilité" htmlFor="v-avail">
               <select id="v-avail" className="input" value={form.availability} onChange={set('availability')}>
                 {entries(AVAILABILITY_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </Field>
+            <Field label="Statut de publication" htmlFor="v-status">
+              <select id="v-status" className="input" value={form.status} onChange={set('status')}>
+                {entries(PUBLICATION_STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </Field>
+
+            {previewYield && (
+              <div className="rounded-2xl border border-green-200 bg-green-50/80 p-4 sm:col-span-2 lg:col-span-3">
+                <p className="text-sm font-bold text-green-950">Aperçu du rendement calculé pour l&apos;acheteur :</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 sm:text-sm">
+                  <div className="rounded-xl bg-white p-3 shadow-xs">
+                    <span className="text-xs text-slate-500">Revenu indicatif</span>
+                    <p className="mt-0.5 text-base font-bold text-green-800">{formatPrice(previewYield.daily, CURRENCY)}/jour</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3 shadow-xs">
+                    <span className="text-xs text-slate-500">Revenus cumulés</span>
+                    <p className="mt-0.5 text-base font-bold text-slate-900">{formatPrice(previewYield.gross, CURRENCY)}</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3 shadow-xs">
+                    <span className="text-xs text-slate-500">Après 5 % de frais</span>
+                    <p className="mt-0.5 text-base font-bold text-slate-900">{formatPrice(previewYield.afterFees, CURRENCY)}</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3 shadow-xs">
+                    <span className="text-xs text-slate-500">Gain net</span>
+                    <p className="mt-0.5 text-base font-bold text-green-700">+{formatPrice(previewYield.net, CURRENCY)}</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-green-800">
+                  Calculé sur {previewYield.duration} jours à {form.daily_revenue_percent} % par jour. Les versements se feront automatiquement chaque jour sans intervention manuelle.
+                </p>
+              </div>
+            )}
+
             <Field label="Conditions de livraison" htmlFor="v-deliv" className="sm:col-span-2 lg:col-span-3">
               <textarea id="v-deliv" rows={3} className="input" maxLength={2000} value={form.delivery_terms} onChange={set('delivery_terms')} />
             </Field>
@@ -368,19 +432,47 @@ export default function AdminVehicleFormPage() {
             <Field label="Informations vendeur" htmlFor="v-seller-d" className="sm:col-span-1 lg:col-span-2">
               <textarea id="v-seller-d" rows={2} className="input" maxLength={2000} value={form.seller_details} onChange={set('seller_details')} />
             </Field>
-            <Field label="Statut de publication" htmlFor="v-status">
-              <select id="v-status" className="input" value={form.status} onChange={set('status')}>
-                {entries(PUBLICATION_STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-              </select>
-            </Field>
           </section>
 
           {error && <Alert tone="danger">{error}</Alert>}
-          <div className="flex gap-2">
-            <button className="btn-primary" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer</button>
-            <Link to="/admin/vehicules" className="btn-secondary">Annuler</Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2">
+              <button className="btn-primary" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer</button>
+              <Link to="/admin/vehicules" className="btn-secondary">Annuler</Link>
+            </div>
+            {!isNew && (
+              <button
+                type="button"
+                className="btn-ghost flex items-center gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setConfirmDelete(true)}
+                disabled={busy}
+              >
+                <Trash2 className="h-4 w-4" /> Supprimer le produit
+              </button>
+            )}
           </div>
         </form>
+
+        <Modal
+          open={confirmDelete}
+          title="Supprimer définitivement ce produit ?"
+          onClose={() => !deleting && setConfirmDelete(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setConfirmDelete(false)} disabled={deleting}>Annuler</button>
+              <button className="btn bg-red-600 text-white hover:bg-red-700" onClick={onDelete} disabled={deleting}>
+                {deleting && <Spinner className="h-4 w-4" />} Supprimer
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-2 text-sm text-slate-600">
+            <p>Êtes-vous sûr de vouloir supprimer <strong>{form.brand} {form.model}</strong> ?</p>
+            <p className="text-xs text-slate-500">
+              Note : si ce produit a déjà été commandé par un client, la suppression sera bloquée pour préserver l&apos;historique financier (vous pourrez alors le désactiver ou l&apos;archiver).
+            </p>
+          </div>
+        </Modal>
 
         {vehicle.data ? (
           <ImagesManager vehicle={vehicle.data} onChange={vehicle.reload} />

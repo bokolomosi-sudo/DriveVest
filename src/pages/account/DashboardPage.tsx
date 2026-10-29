@@ -25,6 +25,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { CURRENCY, formatPrice } from '../../lib/format';
 import { formatPhone } from '../../lib/phoneAuth';
 import { countUnreadNotifications } from '../../services/account';
+import { creditDueProductRevenues } from '../../services/revenue';
 import { getMyBalances, getTodayGains } from '../../services/wallet';
 
 type Icon = ComponentType<{ className?: string }>;
@@ -64,6 +65,9 @@ export default function DashboardPage() {
   const walletEnabled = Boolean(settings?.feature_wallet);
 
   const { data, loading, error, reload } = useAsync(async () => {
+    if (walletEnabled) {
+      await creditDueProductRevenues().catch(() => undefined);
+    }
     const [balances, todayGains, unread] = await Promise.all([
       walletEnabled ? getMyBalances() : Promise.resolve([]),
       walletEnabled ? getTodayGains(userId) : Promise.resolve(0),
