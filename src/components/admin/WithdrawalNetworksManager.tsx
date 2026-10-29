@@ -88,10 +88,10 @@ export function WithdrawalNetworksManager() {
         <ul className="space-y-2">
           {networks.data.map((n) => (
             <li key={n.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex min-w-[10rem] flex-1 items-center gap-3">
                 <PaymentLogo name={n.name} className="h-7 w-7" />
                 <div className="min-w-0">
-                  <p className="break-words font-semibold text-slate-900">{n.name}</p>
+                  <p className="font-semibold text-slate-900">{n.name}</p>
                   <Badge tone={n.is_active ? 'success' : 'neutral'}>{n.is_active ? 'Proposé' : 'Masqué'}</Badge>
                 </div>
               </div>
