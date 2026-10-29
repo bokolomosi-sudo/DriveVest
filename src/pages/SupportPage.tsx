@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { LifeBuoy, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
+import { Headphones, LifeBuoy, Users } from 'lucide-react';
 import { PageMeta } from '../components/PageMeta';
 import { Badge } from '../components/ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../components/ui/Feedback';
@@ -11,43 +11,78 @@ import { useToast } from '../context/ToastContext';
 import { useAsync } from '../hooks/useAsync';
 import { toErrorMessage } from '../lib/errors';
 import { formatDate, whatsappLink } from '../lib/format';
+import { formatLocalPhone } from '../lib/phoneAuth';
 import { SUPPORT_STATUS_LABELS, SUPPORT_STATUS_TONES, SUPPORT_TOPIC_LABELS, entries } from '../lib/labels';
 import { createSupportRequest, listMySupportRequests } from '../services/content';
 import { listMyOrders } from '../services/orders';
 import type { SupportTopic } from '../types';
 
-function ContactCard() {
+function WhatsAppIcon({ className = 'h-6 w-6' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3Z" />
+    </svg>
+  );
+}
+
+/** Contact du service client par WhatsApp et lien du groupe de la plateforme (réglés par l'admin). */
+function WhatsAppSupport() {
   const { settings } = useSettings();
-  const items = [
-    settings?.contact_email && { icon: Mail, label: settings.contact_email, href: `mailto:${settings.contact_email}` },
-    settings?.contact_phone && { icon: Phone, label: settings.contact_phone, href: `tel:${settings.contact_phone}` },
-    settings?.whatsapp_number && { icon: MessageCircle, label: 'Écrire sur WhatsApp', href: whatsappLink(settings.whatsapp_number) },
-    settings?.contact_address && { icon: MapPin, label: settings.contact_address, href: null },
-  ].filter(Boolean) as { icon: typeof Mail; label: string; href: string | null }[];
+  const { profile } = useAuth();
+  const name = settings?.support_name?.trim() || 'Service client Drivest';
+  const number = settings?.whatsapp_number?.trim();
+  const group = settings?.whatsapp_group_url?.trim();
+  const greeting = `Bonjour ${name}, j'ai besoin d'aide sur Drivest.${profile?.phone ? ` Mon numéro de compte : ${formatLocalPhone(profile.phone)}.` : ''}`;
 
   return (
-    <div className="card p-5">
-      <p className="font-semibold">Coordonnées officielles</p>
-      {items.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">
-          Les coordonnées officielles n'ont pas encore été publiées. Utilisez le formulaire pour nous contacter.
-        </p>
-      ) : (
-        <ul className="mt-3 space-y-3 text-sm">
-          {items.map(({ icon: Icon, label, href }) => (
-            <li key={label} className="flex items-start gap-2.5">
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-night-600" />
-              {href ? (
-                <a href={href} className="break-all font-medium text-night-700 hover:text-night-900" target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">
-                  {label}
-                </a>
-              ) : (
-                <span>{label}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-4">
+      <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="flex items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white shadow-md">
+            <Headphones className="h-7 w-7" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sur WhatsApp</p>
+            <p className="break-words text-lg font-bold text-slate-900">{name}</p>
+            {number && <p className="font-mono text-sm text-slate-600">{formatLocalPhone(number)}</p>}
+            {settings?.support_hours && <p className="text-sm text-slate-500">{settings.support_hours}</p>}
+          </div>
+        </div>
+        {number ? (
+          <a
+            href={whatsappLink(number, greeting)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn mt-5 h-14 w-full rounded-2xl bg-[#25D366] text-base text-white shadow-md hover:bg-[#1ebe5b]"
+          >
+            <WhatsAppIcon /> Contacter le service client
+          </a>
+        ) : (
+          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-500">Le numéro WhatsApp du service client sera bientôt disponible.</p>
+        )}
+      </section>
+
+      <section className="rounded-3xl bg-gradient-to-br from-[#075E54] to-[#128C7E] p-5 text-white shadow-md">
+        <div className="flex items-center gap-3">
+          <Users className="h-7 w-7 shrink-0" aria-hidden="true" />
+          <div>
+            <p className="text-lg font-bold">Groupe WhatsApp de Drivest</p>
+            <p className="text-sm text-white/80">Annonces, nouveaux produits et entraide entre membres.</p>
+          </div>
+        </div>
+        {group ? (
+          <a
+            href={group}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn mt-4 h-14 w-full rounded-2xl bg-white text-base text-[#075E54] hover:bg-white/90"
+          >
+            <WhatsAppIcon /> Rejoindre le groupe WhatsApp
+          </a>
+        ) : (
+          <p className="mt-4 rounded-xl bg-white/10 p-3 text-sm">Le lien du groupe sera bientôt disponible.</p>
+        )}
+      </section>
     </div>
   );
 }
@@ -143,18 +178,23 @@ export default function SupportPage() {
   const [version, setVersion] = useState(0);
 
   return (
-    <div className="container-page py-10">
+    <div className="container-page max-w-2xl py-6 sm:py-10">
       <PageMeta title="Service client" description="Contactez l'équipe Drivest pour toute question sur un véhicule, une commande ou un paiement." />
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Service client</h1>
-      <p className="mt-1 text-sm text-slate-500">Une question sur un véhicule, une commande ou un paiement ? Écrivez-nous.</p>
+      <p className="mt-1 text-sm text-slate-500">Une question ? Écrivez-nous directement sur WhatsApp.</p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="mt-6 space-y-8">
+        <WhatsAppSupport />
         <div className="space-y-8">
           {loading ? (
             <LoadingState />
           ) : user ? (
             <>
-              <SupportForm userId={user.id} onCreated={() => setVersion((v) => v + 1)} />
+              <section>
+                <h2 className="mb-1 text-lg font-semibold">Ou envoyez une demande écrite</h2>
+                <p className="mb-4 text-sm text-slate-500">La réponse s'affiche ici et dans vos notifications.</p>
+                <SupportForm userId={user.id} onCreated={() => setVersion((v) => v + 1)} />
+              </section>
               <section>
                 <h2 className="mb-4 text-lg font-semibold">Mes demandes</h2>
                 <SupportHistory userId={user.id} version={version} />
@@ -169,7 +209,6 @@ export default function SupportPage() {
             />
           )}
         </div>
-        <aside><ContactCard /></aside>
       </div>
     </div>
   );

@@ -80,6 +80,9 @@ export interface PlatformSettings {
   /** Provinces proposées sur la page de bienvenue */
   provinces: string[];
   whatsapp_group_url: string | null;
+  /** Nom du service client affiché sur WhatsApp */
+  support_name: string | null;
+  support_hours: string | null;
   contact_address: string | null;
   legal_notice: string | null;
   feature_wallet: boolean;

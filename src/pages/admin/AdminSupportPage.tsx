@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LifeBuoy } from 'lucide-react';
+import { SupportContactCard } from '../../components/admin/SupportContactCard';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Badge } from '../../components/ui/Badge';
@@ -75,7 +76,8 @@ export default function AdminSupportPage() {
   return (
     <>
       <PageMeta title="Service client — Administration" noindex />
-      <PageHeader title="Service client" description="Demandes des clients. Chaque réponse est notifiée au client et journalisée." />
+      <PageHeader title="Service client" description="Contact WhatsApp affiché aux membres, puis leurs demandes écrites." />
+      <SupportContactCard />
       <select className="input mb-4 w-auto" value={status} onChange={(e) => setStatus(e.target.value as SupportStatus | 'all')} aria-label="Filtrer">
         <option value="all">Toutes</option>
         {entries(SUPPORT_STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}

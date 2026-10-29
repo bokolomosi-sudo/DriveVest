@@ -34,6 +34,9 @@ export function vehicleTitle(v: { brand: string; model: string; year?: number | 
 }
 
 /** Lien WhatsApp à partir d'un numéro officiel (chiffres uniquement). */
-export function whatsappLink(number: string): string {
-  return `https://wa.me/${number.replace(/[^\d]/g, '')}`;
+/** Lien WhatsApp ; un numéro local (097…) est converti au format international (243…). */
+export function whatsappLink(number: string, text?: string): string {
+  let digits = number.replace(/[^\d]/g, '');
+  if (/^0\d{9}$/.test(digits)) digits = `243${digits.slice(1)}`;
+  return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
