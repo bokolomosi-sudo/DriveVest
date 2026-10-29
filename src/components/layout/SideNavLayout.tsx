@@ -1,6 +1,7 @@
 import { Suspense, type ComponentType, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LoadingState } from '../ui/Feedback';
+import { PageErrorBoundary } from '../PageErrorBoundary';
 
 export interface SideNavItem {
   to: string;
@@ -11,6 +12,7 @@ export interface SideNavItem {
 
 /** Mise en page à navigation latérale (espace client et administration). */
 export function SideNavLayout({ title, items, hideNavOnMobile = false }: { title: string; items: SideNavItem[]; hideNavOnMobile?: boolean }) {
+  const { pathname } = useLocation();
   return (
     <div className="container-page py-6 lg:py-10">
       <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8">
@@ -35,9 +37,12 @@ export function SideNavLayout({ title, items, hideNavOnMobile = false }: { title
           </nav>
         </aside>
         <section className="min-w-0">
-          <Suspense fallback={<LoadingState />}>
-            <Outlet />
-          </Suspense>
+          {/* Une nouvelle page = un nouvel essai (key) */}
+          <PageErrorBoundary key={pathname}>
+            <Suspense fallback={<LoadingState />}>
+              <Outlet />
+            </Suspense>
+          </PageErrorBoundary>
         </section>
       </div>
     </div>

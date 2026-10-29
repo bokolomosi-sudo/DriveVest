@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazyPage } from './lib/lazyPage';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import {
   ArrowDownToLine,
@@ -34,38 +34,38 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import WelcomePage from './pages/auth/WelcomePage';
 
-const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage'));
-const MessagesPage = lazy(() => import('./pages/MessagesPage'));
-const SupportPage = lazy(() => import('./pages/SupportPage'));
-const LegalPage = lazy(() => import('./pages/LegalPage'));
+const AnnouncementsPage = lazyPage(() => import('./pages/AnnouncementsPage'));
+const MessagesPage = lazyPage(() => import('./pages/MessagesPage'));
+const SupportPage = lazyPage(() => import('./pages/SupportPage'));
+const LegalPage = lazyPage(() => import('./pages/LegalPage'));
 
-const DashboardPage = lazy(() => import('./pages/account/DashboardPage'));
-const MyProductsPage = lazy(() => import('./pages/account/MyProductsPage'));
-const OrderDetailPage = lazy(() => import('./pages/account/OrderDetailPage'));
-const NotificationsPage = lazy(() => import('./pages/account/NotificationsPage'));
-const TransactionsPage = lazy(() => import('./pages/account/TransactionsPage'));
-const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
-const SecurityPage = lazy(() => import('./pages/account/SecurityPage'));
-const WalletPage = lazy(() => import('./pages/account/WalletPage'));
-const DepositPage = lazy(() => import('./pages/account/DepositPage'));
-const WithdrawalPage = lazy(() => import('./pages/account/WithdrawalPage'));
-const ReferralPage = lazy(() => import('./pages/account/ReferralPage'));
+const DashboardPage = lazyPage(() => import('./pages/account/DashboardPage'));
+const MyProductsPage = lazyPage(() => import('./pages/account/MyProductsPage'));
+const OrderDetailPage = lazyPage(() => import('./pages/account/OrderDetailPage'));
+const NotificationsPage = lazyPage(() => import('./pages/account/NotificationsPage'));
+const TransactionsPage = lazyPage(() => import('./pages/account/TransactionsPage'));
+const ProfilePage = lazyPage(() => import('./pages/account/ProfilePage'));
+const SecurityPage = lazyPage(() => import('./pages/account/SecurityPage'));
+const WalletPage = lazyPage(() => import('./pages/account/WalletPage'));
+const DepositPage = lazyPage(() => import('./pages/account/DepositPage'));
+const WithdrawalPage = lazyPage(() => import('./pages/account/WithdrawalPage'));
+const ReferralPage = lazyPage(() => import('./pages/account/ReferralPage'));
 
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const AdminVehiclesPage = lazy(() => import('./pages/admin/AdminVehiclesPage'));
-const AdminVehicleFormPage = lazy(() => import('./pages/admin/AdminVehicleFormPage'));
-const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'));
-const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
-const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage'));
-const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage'));
-const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
-const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage'));
-const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage'));
-const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'));
-const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage'));
-const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'));
-const AdminRulesPage = lazy(() => import('./pages/admin/AdminRulesPage'));
-const AdminWalletPage = lazy(() => import('./pages/admin/AdminWalletPage'));
+const AdminDashboardPage = lazyPage(() => import('./pages/admin/AdminDashboardPage'));
+const AdminVehiclesPage = lazyPage(() => import('./pages/admin/AdminVehiclesPage'));
+const AdminVehicleFormPage = lazyPage(() => import('./pages/admin/AdminVehicleFormPage'));
+const AdminCategoriesPage = lazyPage(() => import('./pages/admin/AdminCategoriesPage'));
+const AdminOrdersPage = lazyPage(() => import('./pages/admin/AdminOrdersPage'));
+const AdminOrderDetailPage = lazyPage(() => import('./pages/admin/AdminOrderDetailPage'));
+const AdminFinancePage = lazyPage(() => import('./pages/admin/AdminFinancePage'));
+const AdminUsersPage = lazyPage(() => import('./pages/admin/AdminUsersPage'));
+const AdminUserDetailPage = lazyPage(() => import('./pages/admin/AdminUserDetailPage'));
+const AdminSupportPage = lazyPage(() => import('./pages/admin/AdminSupportPage'));
+const AdminAnnouncementsPage = lazyPage(() => import('./pages/admin/AdminAnnouncementsPage'));
+const AdminAuditPage = lazyPage(() => import('./pages/admin/AdminAuditPage'));
+const AdminSettingsPage = lazyPage(() => import('./pages/admin/AdminSettingsPage'));
+const AdminRulesPage = lazyPage(() => import('./pages/admin/AdminRulesPage'));
+const AdminWalletPage = lazyPage(() => import('./pages/admin/AdminWalletPage'));
 
 function accountNav(s: PlatformSettings | null): SideNavItem[] {
   return [

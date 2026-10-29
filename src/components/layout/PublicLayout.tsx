@@ -1,11 +1,13 @@
 import { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { LoadingState } from '../ui/Feedback';
 import { MobileTabBar } from './MobileTabBar';
 import { Navbar } from './Navbar';
+import { PageErrorBoundary } from '../PageErrorBoundary';
 
 export function PublicLayout() {
+  const { pathname } = useLocation();
   return (
     <div className="flex min-h-screen flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
@@ -19,9 +21,12 @@ export function PublicLayout() {
       )}
       <Navbar />
       <main id="contenu" className="flex-1">
-        <Suspense fallback={<LoadingState />}>
-          <Outlet />
-        </Suspense>
+        {/* Une nouvelle page = un nouvel essai (key) */}
+        <PageErrorBoundary key={pathname}>
+          <Suspense fallback={<LoadingState />}>
+            <Outlet />
+          </Suspense>
+        </PageErrorBoundary>
       </main>
       <MobileTabBar />
     </div>
