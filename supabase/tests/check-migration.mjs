@@ -372,5 +372,12 @@ noteC.rows[0].body.includes('Orange Money') ? ok('notification avec le bon rése
 const ovC = await as(ADMIN, `select admin_user_overview($1) as o`, [C]);
 ovC.rows[0].o.withdrawal_account?.network === 'Orange Money' ? ok('fiche admin : réseau visible') : fail('fiche réseau', JSON.stringify(ovC.rows[0].o.withdrawal_account));
 
+console.log('19. Liste des utilisateurs');
+const ub = await as(ADMIN, `select user_id, balance from admin_users_balances($1)`, [[C, R3]]);
+ub.rows.length === 2 && Number(ub.rows.find((r) => r.user_id === C).balance) === await bal(C, 'CDF')
+  ? ok('soldes de plusieurs membres lus par l\'admin')
+  : fail('soldes liste', JSON.stringify(ub.rows));
+await expectError('soldes des autres interdits aux membres', () => as(C, `select * from admin_users_balances($1)`, [[R3]]), /administrateurs/);
+
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

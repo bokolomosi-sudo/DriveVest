@@ -7,7 +7,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return data as DashboardStats;
 }
 
-export type AdminUser = Profile & { roles: AppRole[] };
+export type AdminUser = Profile & { roles: AppRole[]; balance?: number };
 
 export async function adminListUsers(search = ''): Promise<AdminUser[]> {
   let query = db().from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
@@ -29,7 +29,10 @@ export async function adminListUsers(search = ''): Promise<AdminUser[]> {
   for (const r of (roles.data ?? []) as { user_id: string; role: AppRole }[]) {
     byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r.role]);
   }
-  return profiles.map((p) => ({ ...p, roles: byUser.get(p.id) ?? [] }));
+  const balances = await db().rpc('admin_users_balances', { p_user_ids: profiles.map((p) => p.id) });
+  if (balances.error) throw balances.error;
+  const balanceOf = new Map(((balances.data ?? []) as { user_id: string; balance: number }[]).map((b) => [b.user_id, Number(b.balance)]));
+  return profiles.map((p) => ({ ...p, roles: byUser.get(p.id) ?? [], balance: balanceOf.get(p.id) ?? 0 }));
 }
 
 export async function adminGetUser(userId: string): Promise<AdminUser | null> {
