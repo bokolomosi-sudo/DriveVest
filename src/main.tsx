@@ -5,6 +5,7 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
+import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { ScrollToTop } from './components/ScrollToTop';
 import { InstallPrompt } from './components/InstallPrompt';
 import { NetworkStatus } from './components/NetworkStatus';
@@ -28,13 +29,16 @@ createRoot(document.getElementById('root')!).render(
       <ScrollToTop />
       <NetworkStatus />
       <InstallPrompt />
-      <ToastProvider>
-        <AuthProvider>
-          <SettingsProvider>
-            <App />
-          </SettingsProvider>
-        </AuthProvider>
-      </ToastProvider>
+      {/* Dernier filet de sécurité : jamais d'écran blanc, toujours un bouton Réessayer */}
+      <PageErrorBoundary>
+        <ToastProvider>
+          <AuthProvider>
+            <SettingsProvider>
+              <App />
+            </SettingsProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </PageErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 );

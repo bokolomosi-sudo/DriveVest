@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, Clock, MapPin, ShoppingBag, Store, Truck, Wallet } from 'lucide-react';
+import { ChevronRight, Clock, MapPin, Store, Truck, Wallet } from 'lucide-react';
 import { PageMeta } from '../components/PageMeta';
 import { Badge } from '../components/ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../components/ui/Feedback';
-import { Field } from '../components/ui/Field';
 import { Modal } from '../components/ui/Modal';
 import { VehicleImagePlaceholder } from '../components/vehicles/VehicleImagePlaceholder';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +19,6 @@ import {
   FUEL_LABELS,
   TRANSMISSION_LABELS,
 } from '../lib/labels';
-import { createOrder } from '../services/orders';
 import { getVehicle, vehicleImageUrl } from '../services/vehicles';
 import { buyVehicleWithWallet, getMyBalances } from '../services/wallet';
 import type { Vehicle } from '../types';
@@ -96,13 +94,6 @@ export default function VehicleDetailPage() {
   const { notify } = useToast();
   const { data: vehicle, loading, error, reload } = useAsync(() => getVehicle(id), [id]);
 
-  const [orderOpen, setOrderOpen] = useState(false);
-  const [note, setNote] = useState('');
-  const [address, setAddress] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [orderError, setOrderError] = useState<string | null>(null);
-  // Clé d'idempotence : une même ouverture du formulaire ne crée qu'une commande
-  const idempotencyKey = useRef<string>(crypto.randomUUID());
   const { settings } = useSettings();
   const [buyOpen, setBuyOpen] = useState(false);
   const [buying, setBuying] = useState(false);
@@ -113,13 +104,6 @@ export default function VehicleDetailPage() {
   const requireLogin = () => navigate(`/connexion?redirect=${encodeURIComponent(`/vehicules/${id}`)}`);
 
 
-
-  const openOrder = () => {
-    if (!user) return requireLogin();
-    idempotencyKey.current = crypto.randomUUID();
-    setOrderError(null);
-    setOrderOpen(true);
-  };
 
   // Bouton « Acheter » d'une carte produit : ouvre directement la confirmation d'achat
   useEffect(() => {
@@ -155,22 +139,6 @@ export default function VehicleDetailPage() {
       setBuyError(toErrorMessage(err));
     } finally {
       setBuying(false);
-    }
-  };
-
-  const submitOrder = async (e: FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    setOrderError(null);
-    try {
-      const order = await createOrder({ vehicleId: id, idempotencyKey: idempotencyKey.current, note, deliveryAddress: address });
-      notify('success', `Demande d'achat ${order.order_number} enregistrée.`);
-      navigate(`/compte/commandes/${order.id}`);
-    } catch (err) {
-      setOrderError(toErrorMessage(err));
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -233,16 +201,10 @@ export default function VehicleDetailPage() {
             {vehicle.duration_days && (
               <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600"><Clock className="h-4 w-4" /> Durée : {vehicle.duration_days} jours</p>
             )}
-            {settings?.feature_wallet && (
-              <button className="btn-primary mt-5 w-full py-3 text-base" onClick={openBuy} disabled={!orderable}>
-                <Wallet className="h-5 w-5" /> Acheter avec mon portefeuille
-              </button>
-            )}
-            <div className={`${settings?.feature_wallet ? 'mt-2' : 'mt-5'} flex flex-col gap-2 sm:flex-row`}>
-              <button className={`${settings?.feature_wallet ? 'btn-secondary' : 'btn-primary'} flex-1`} onClick={openOrder} disabled={!orderable}>
-                <ShoppingBag className="h-4 w-4" /> {settings?.feature_wallet ? 'Payer autrement' : "Demander l'achat"}
-              </button>
-            </div>
+            <button className="btn-primary mt-5 w-full py-3 text-base" onClick={openBuy} disabled={!orderable}>
+              <Wallet className="h-5 w-5" /> Acheter avec mon solde Drivest
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-500">Le paiement se fait uniquement avec le solde de votre compte Drivest.</p>
             {!orderable && (
               <p className="mt-3 text-xs text-slate-500">
                 {vehicle.price === null
@@ -314,37 +276,6 @@ export default function VehicleDetailPage() {
         </div>
       </Modal>
 
-      <Modal
-        open={orderOpen}
-        title="Demande d'achat"
-        onClose={() => !submitting && setOrderOpen(false)}
-        footer={
-          <>
-            <button className="btn-secondary" onClick={() => setOrderOpen(false)} disabled={submitting}>Annuler</button>
-            <button className="btn-primary" form="order-form" disabled={submitting}>
-              {submitting && <Spinner className="h-4 w-4" />} Confirmer la demande
-            </button>
-          </>
-        }
-      >
-        <form id="order-form" onSubmit={submitOrder} className="space-y-4">
-          <div className="rounded-lg bg-slate-50 p-3 text-sm">
-            <p className="font-semibold">{title}</p>
-            <p className="text-slate-600">{formatPrice(vehicle.price, vehicle.currency)}</p>
-          </div>
-          <Alert tone="info">
-            Votre demande sera confirmée par l'équipe Drivest. Les instructions de paiement seront ensuite disponibles
-            dans le suivi de votre commande. Aucun paiement n'est prélevé à cette étape.
-          </Alert>
-          <Field label="Adresse ou ville de livraison souhaitée" htmlFor="order-address">
-            <input id="order-address" className="input" maxLength={500} value={address} onChange={(e) => setAddress(e.target.value)} />
-          </Field>
-          <Field label="Message (facultatif)" htmlFor="order-note">
-            <textarea id="order-note" rows={3} className="input" maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
-          </Field>
-          {orderError && <Alert tone="danger">{orderError}</Alert>}
-        </form>
-      </Modal>
     </div>
   );
 }

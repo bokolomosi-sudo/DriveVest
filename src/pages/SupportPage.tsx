@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Headphones, LifeBuoy, Users } from 'lucide-react';
+import { Headphones, LifeBuoy } from 'lucide-react';
 import { PageMeta } from '../components/PageMeta';
 import { Badge } from '../components/ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../components/ui/Feedback';
@@ -64,7 +64,7 @@ function WhatsAppSupport() {
 
       <section className="rounded-3xl bg-gradient-to-br from-[#075E54] to-[#128C7E] p-5 text-white shadow-md">
         <div className="flex items-center gap-3">
-          <Users className="h-7 w-7 shrink-0" aria-hidden="true" />
+          <img src="/logos/whatsapp-icon.png" alt="" aria-hidden="true" className="h-12 w-12 shrink-0 rounded-xl shadow-md" />
           <div>
             <p className="text-lg font-bold">Groupe WhatsApp de Drivest</p>
             <p className="text-sm text-white/80">Annonces, nouveaux produits et entraide entre membres.</p>
@@ -77,7 +77,7 @@ function WhatsAppSupport() {
             rel="noopener noreferrer"
             className="btn mt-4 h-14 w-full rounded-2xl bg-white text-base text-[#075E54] hover:bg-white/90"
           >
-            <WhatsAppIcon /> Rejoindre le groupe WhatsApp
+            <img src="/logos/whatsapp-icon.png" alt="" aria-hidden="true" className="h-7 w-7 rounded-md" /> Rejoindre le groupe WhatsApp
           </a>
         ) : (
           <p className="mt-4 rounded-xl bg-white/10 p-3 text-sm">Le lien du groupe sera bientôt disponible.</p>
