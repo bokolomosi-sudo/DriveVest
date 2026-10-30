@@ -284,9 +284,14 @@ export default function AdminVehicleFormPage() {
     setError(null);
     try {
       const saved = await adminSaveVehicle(id ?? null, input);
+      setForm(toForm(saved, settings?.default_currency ?? 'CDF'));
       notify('success', isNew ? 'Véhicule créé. Vous pouvez ajouter des photos.' : 'Véhicule enregistré.');
-      if (isNew) navigate(`/admin/vehicules/${saved.id}`, { replace: true });
-      else await vehicle.reload();
+      if (isNew) {
+        navigate(`/admin/vehicules/${saved.id}`, { replace: true });
+      } else {
+        vehicle.setData(saved);
+        await vehicle.reload();
+      }
     } catch (err) {
       setError(toErrorMessage(err));
     } finally {
