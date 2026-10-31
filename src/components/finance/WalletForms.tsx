@@ -181,8 +181,8 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
               <span className="text-xs text-night-200">{validAmount ? `À envoyer : ${formatPrice(value, CURRENCY)}` : 'Montant à choisir'}</span>
             </div>
             <p className="relative mt-5 text-xs uppercase tracking-widest text-night-200">Numéro du compte</p>
-            <div className="relative mt-1 flex items-center justify-between gap-3">
-              <p className="break-all font-mono text-2xl font-bold tracking-wider min-[360px]:text-3xl">{channel.account_number}</p>
+            <div className="relative mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p className="whitespace-nowrap font-mono text-[1.4rem] font-bold tracking-wide min-[400px]:text-2xl sm:text-3xl">{channel.account_number}</p>
               <CopyButton value={channel.account_number} label="Numéro" onDark />
             </div>
             {channel.account_name && <p className="relative mt-2 text-sm font-medium uppercase tracking-wide text-night-100">{channel.account_name}</p>}
