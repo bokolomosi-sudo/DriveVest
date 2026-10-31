@@ -7,16 +7,15 @@ import { toErrorMessage } from '../../lib/errors';
 import { formatPrice } from '../../lib/format';
 import { vehicleImageUrl } from '../../services/vehicles';
 import { buyVehicleWithWallet } from '../../services/wallet';
-import { vehicleDailyAmount } from '../../lib/productYield';
+import { productYield, vehicleDailyAmount } from '../../lib/productYield';
 import type { Vehicle } from '../../types';
-import { ProductYieldBlock } from './ProductYield';
 import { VehicleImagePlaceholder } from './VehicleImagePlaceholder';
 
-function InfoPill({ label, value }: { label: string; value: string }) {
+function InfoPill({ label, value, valueClassName = 'text-slate-900' }: { label: string; value: string; valueClassName?: string }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
       <span className="text-xs font-medium text-slate-500">{label}</span>
-      <span className="text-right text-sm font-bold text-slate-900">{value}</span>
+      <span className={`text-right text-sm font-bold ${valueClassName}`}>{value}</span>
     </div>
   );
 }
@@ -27,6 +26,8 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const cover = vehicle.images?.[0];
   const title = `${vehicle.brand} ${vehicle.model}`.trim();
   const available = vehicle.availability === 'available' && vehicle.price !== null;
+  // Gain total = revenus cumulés − prix, sans les frais de retrait (non affichés au client)
+  const yieldInfo = productYield(vehicle.price, vehicle.duration_days, vehicle.daily_revenue_percent, 0, vehicleDailyAmount(vehicle));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   // Une même clé tant que l'achat n'a pas abouti : un double appui ne paie qu'une fois
@@ -62,6 +63,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             {vehicle.duration_days && <InfoPill label="Durée" value={`${vehicle.duration_days} jours`} />}
             {vehicleDailyAmount(vehicle) > 0 && <InfoPill label="Revenu / jour" value={formatPrice(vehicleDailyAmount(vehicle), vehicle.currency)} />}
+            {yieldInfo && <InfoPill label="Gain total" value={formatPrice(yieldInfo.net, vehicle.currency)} valueClassName="font-extrabold text-green-700" />}
           </div>
           <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-inner min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32">
             {cover ? (
@@ -79,9 +81,6 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           </div>
         </div>
 
-        <div className="mt-3">
-          <ProductYieldBlock vehicle={vehicle} compact />
-        </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link to={`/vehicules/${vehicle.id}`} className="btn-secondary rounded-xl py-3">
             Plus de détails
