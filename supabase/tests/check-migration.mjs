@@ -139,8 +139,8 @@ const av = await db.query(`select availability from vehicles where id = $1`, [ve
 av.rows[0].availability === 'reserved' ? ok('véhicule réservé') : fail('réservation', av.rows[0].availability);
 
 console.log('8. Remboursements retirés');
-await expectError('demande de remboursement refusée', () => as(CLIENT, `select request_refund($1, 'Changement de projet')`, [orderId]), /permission denied/);
-await expectError('traitement de remboursement refusé', () => as(ADMIN, `select admin_process_refund(gen_random_uuid(), 'approved')`), /permission denied/);
+await expectError('demande de remboursement refusée', () => as(CLIENT, `select request_refund($1, 'Changement de projet')`, [orderId]), /permission denied|does not exist/);
+await expectError('traitement de remboursement refusé', () => as(ADMIN, `select admin_process_refund(gen_random_uuid(), 'approved')`), /permission denied|does not exist/);
 // Le véhicule réservé par la commande confirmée est remis en vente pour la suite des tests
 await as(ADMIN, `update vehicles set availability = 'available' where id = $1`, [vehicleId]);
 
@@ -215,7 +215,7 @@ await as(ADMIN, `update platform_settings set min_withdrawal = 10`);
 console.log('11. Offres d\'investissement retirées');
 const investFlag = await db.query(`select feature_investment from platform_settings where id = 1`);
 investFlag.rows[0].feature_investment === false ? ok('module investissement désactivé') : fail('investissement', 'encore actif');
-await expectError('participation refusée', () => as(INV, `select invest(gen_random_uuid(), 300, true, gen_random_uuid())`), /permission denied/);
+await expectError('participation refusée', () => as(INV, `select invest(gen_random_uuid(), 300, true, gen_random_uuid())`), /permission denied|does not exist/);
 
 console.log('12. Paiement de commande par portefeuille');
 const o3 = await as(INV, `select * from create_order($1, gen_random_uuid())`, [vehicleId]);
