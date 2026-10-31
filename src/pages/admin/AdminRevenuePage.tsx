@@ -4,6 +4,7 @@ import { Coins, Play, RefreshCw, SlidersHorizontal, TrendingUp } from 'lucide-re
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../../components/ui/Feedback';
+import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
@@ -14,6 +15,8 @@ import { adminListVehicles } from '../../services/vehicles';
 
 export default function AdminRevenuePage() {
   const { notify } = useToast();
+  const { settings } = useSettings();
+  const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
   const vehicles = useAsync(() => adminListVehicles('all'), []);
   const credits = useAsync(adminListDailyCredits, []);
   const [running, setRunning] = useState(false);
@@ -131,14 +134,14 @@ export default function AdminRevenuePage() {
                   <th>% / jour</th>
                   <th>Revenu / jour</th>
                   <th>Cumul brut</th>
-                  <th>Après 5 %</th>
+                  <th>Après {feePercent} %</th>
                   <th>Gain net</th>
                   <th className="text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {revenueProducts.map((v) => {
-                  const y = productYield(v.price, v.duration_days, v.daily_revenue_percent, 5);
+                  const y = productYield(v.price, v.duration_days, v.daily_revenue_percent, feePercent);
                   return (
                     <tr key={v.id}>
                       <td className="font-semibold text-slate-900">

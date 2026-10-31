@@ -257,7 +257,8 @@ export default function AdminVehicleFormPage() {
   const livePrice = num(form.price);
   const liveDuration = num(form.duration_days);
   const livePercent = num(form.daily_revenue_percent);
-  const previewYield = productYield(livePrice, liveDuration, livePercent, 5);
+  const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
+  const previewYield = productYield(livePrice, liveDuration, livePercent, feePercent);
 
   const onDelete = async () => {
     if (!id || deleting) return;
@@ -408,7 +409,7 @@ export default function AdminVehicleFormPage() {
                     <p className="mt-0.5 text-base font-bold text-slate-900">{formatPrice(previewYield.gross, CURRENCY)}</p>
                   </div>
                   <div className="rounded-xl bg-white p-3 shadow-xs">
-                    <span className="text-xs text-slate-500">Après 5 % de frais</span>
+                    <span className="text-xs text-slate-500">Après {previewYield.feePercent} % de frais</span>
                     <p className="mt-0.5 text-base font-bold text-slate-900">{formatPrice(previewYield.afterFees, CURRENCY)}</p>
                   </div>
                   <div className="rounded-xl bg-white p-3 shadow-xs">

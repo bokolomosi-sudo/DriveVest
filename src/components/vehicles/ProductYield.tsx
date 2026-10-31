@@ -4,18 +4,16 @@ import type { Vehicle } from '../../types';
 
 export function ProductYieldBlock({
   vehicle,
-  feePercent = 5,
   compact = false,
 }: {
   vehicle: Pick<Vehicle, 'price' | 'currency' | 'duration_days' | 'daily_revenue_percent' | 'daily_revenue_cap'>;
-  feePercent?: number;
   compact?: boolean;
 }) {
   const yieldInfo = productYield(
     vehicle.price,
     vehicle.duration_days,
     vehicle.daily_revenue_percent,
-    feePercent,
+    0,
     vehicleDailyAmount(vehicle),
   );
   if (!yieldInfo) return null;
@@ -26,10 +24,8 @@ export function ProductYieldBlock({
       <p className={compact ? 'font-semibold text-slate-800' : 'font-semibold'}>
         Revenu indicatif : {formatPrice(yieldInfo.daily, currency)}/jour
       </p>
-      <p>Revenus cumulés : {formatPrice(yieldInfo.gross, currency)}</p>
-      <p>Après {yieldInfo.feePercent} % de frais : {formatPrice(yieldInfo.afterFees, currency)}</p>
       <p className={compact ? 'font-semibold text-green-700' : 'font-semibold'}>
-        Gain net : {formatPrice(yieldInfo.net, currency)}
+        Revenus cumulés : {formatPrice(yieldInfo.gross, currency)}
       </p>
       {!compact && (
         <p className="mt-2 text-xs text-green-800">
