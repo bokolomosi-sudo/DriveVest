@@ -5,7 +5,19 @@ import { db } from './supabase';
  * L'appareil s'abonne avec la clé publique VAPID ; la base envoie ensuite chaque
  * notification enregistrée via la fonction Edge « send-push ».
  */
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+// Clé publique VAPID : créée par la fonction send-push et lue dans la base (une fois par session)
+let publicKeyPromise: Promise<string | null> | null = null;
+
+function getPublicKey(): Promise<string | null> {
+  publicKeyPromise ??= Promise.resolve(db().rpc('get_push_public_key')).then(({ data, error }) => {
+    if (error) {
+      publicKeyPromise = null;
+      return null;
+    }
+    return (data as string | null) || null;
+  });
+  return publicKeyPromise;
+}
 
 export type PushState = 'unsupported' | 'not-configured' | 'denied' | 'enabled' | 'available';
 
@@ -40,7 +52,7 @@ async function save(subscription: PushSubscription): Promise<void> {
 
 export async function getPushState(): Promise<PushState> {
   if (!isPushSupported()) return 'unsupported';
-  if (!VAPID_PUBLIC_KEY) return 'not-configured';
+  if (!(await getPublicKey())) return 'not-configured';
   if (Notification.permission === 'denied') return 'denied';
   const reg = await registration();
   const sub = await reg?.pushManager.getSubscription();
@@ -50,7 +62,8 @@ export async function getPushState(): Promise<PushState> {
 /** Demande l'autorisation puis abonne l'appareil au compte connecté. */
 export async function enablePush(): Promise<PushState> {
   if (!isPushSupported()) return 'unsupported';
-  if (!VAPID_PUBLIC_KEY) return 'not-configured';
+  const publicKey = await getPublicKey();
+  if (!publicKey) return 'not-configured';
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return permission === 'denied' ? 'denied' : 'available';
   const reg = (await registration()) ?? (await navigator.serviceWorker.ready);
@@ -58,7 +71,7 @@ export async function enablePush(): Promise<PushState> {
     (await reg.pushManager.getSubscription()) ??
     (await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToBuffer(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToBuffer(publicKey),
     }));
   await save(subscription);
   return 'enabled';
@@ -66,7 +79,7 @@ export async function enablePush(): Promise<PushState> {
 
 /** À la connexion : rattache silencieusement l'appareil déjà autorisé au compte connecté. */
 export async function syncPushSubscription(): Promise<void> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') return;
+  if (!isPushSupported() || Notification.permission !== 'granted') return;
   const reg = await registration();
   const sub = await reg?.pushManager.getSubscription();
   if (sub) await save(sub);
