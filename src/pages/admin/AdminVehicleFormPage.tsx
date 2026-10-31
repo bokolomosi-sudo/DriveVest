@@ -283,7 +283,7 @@ export default function AdminVehicleFormPage() {
     setBusy(true);
     setError(null);
     try {
-      const saved = await adminSaveVehicle(id ?? null, input);
+      await adminSaveVehicle(id ?? null, input);
       notify('success', isNew ? 'Véhicule créé avec succès.' : 'Véhicule enregistré avec succès.');
       navigate('/admin/vehicules', { replace: true });
     } catch (err) {
