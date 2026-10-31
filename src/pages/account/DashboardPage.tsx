@@ -76,7 +76,7 @@ export default function DashboardPage() {
     return { balance: balances.find((b) => b.currency === CURRENCY), todayGains, unread };
   }, [userId, walletEnabled]);
 
-  const phone = formatPhone(user?.phone || profile?.phone);
+  const phone = formatPhone(profile?.phone || user?.phone);
   const code = profile?.referral_code ?? '';
 
   const copyCode = async () => {
