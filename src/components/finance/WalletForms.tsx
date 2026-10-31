@@ -1,6 +1,6 @@
-import { useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, CheckCircle2, ChevronDown, Circle, Copy, Phone, Wallet } from 'lucide-react';
+import { CheckCircle2, Circle, Phone, Wallet } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
@@ -27,14 +27,11 @@ import type { Transaction } from '../../types';
 
 // --- Dépôt --------------------------------------------------------------------
 
-function CopyButton({ value, label, onDark }: { value: string; label: string; onDark?: boolean }) {
+function CopyButton({ value, label, solid }: { value: string; label: string; solid?: boolean }) {
   const { notify } = useToast();
-  const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
       notify('success', `${label} copié.`);
     } catch {
       notify('error', 'Copie impossible : sélectionnez le texte manuellement.');
@@ -44,31 +41,12 @@ function CopyButton({ value, label, onDark }: { value: string; label: string; on
     <button
       type="button"
       onClick={copy}
-      aria-label={`Copier : ${label}`}
-      className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${onDark ? 'bg-white/15 text-white hover:bg-white/25' : 'bg-night-50 text-night-800 hover:bg-night-100'}`}
+      className={`btn shrink-0 rounded-xl px-4 py-2 ${solid ? 'bg-accent-700 text-white hover:bg-accent-800' : 'border border-accent-700 bg-white text-accent-800 hover:bg-accent-50'}`}
     >
-      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? 'Copié' : 'Copier'}
+      Copier
     </button>
   );
 }
-
-/** Étape numérotée du parcours de dépôt. */
-function DepositStep({ n, title, done, children }: { n: number; title: string; done?: boolean; children: ReactNode }) {
-  return (
-    <li className="relative pl-12">
-      <span
-        className={`absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ring-4 ring-white ${done ? 'bg-accent-500 text-white' : 'bg-night-900 text-white'}`}
-        aria-hidden="true"
-      >
-        {done ? <Check className="h-4 w-4" /> : n}
-      </span>
-      <p className="mb-3 pt-1 text-base font-bold text-slate-900">{title}</p>
-      {children}
-    </li>
-  );
-}
-
-const QUICK_AMOUNTS = [20000, 50000, 100000, 200000];
 
 export function DepositForm({ userId, onDone }: { userId: string; onDone: () => void }) {
   const { settings } = useSettings();
@@ -85,15 +63,13 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
   const channel = list.find((c) => c.id === channelId) ?? list[0] ?? null;
   const value = Number(amount);
   const minimum = Number(settings?.min_deposit ?? 0);
-  const validAmount = amount !== '' && Number.isFinite(value) && value > 0 && value >= minimum;
-  const quickAmounts = QUICK_AMOUNTS.filter((a) => a >= minimum);
-  const guide = channel?.instructions || settings?.deposit_instructions;
+  const validAmount = amount !== '' && Number.isFinite(value) && value > 0;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy || !channel) return;
     setError(null);
-    if (!(amount !== '' && value > 0)) return setError('Indiquez le montant de votre dépôt.');
+    if (!validAmount) return setError('Indiquez le montant de votre dépôt.');
     if (value < minimum) return setError(`Le dépôt minimum est de ${formatPrice(minimum, CURRENCY)}.`);
     if (reference.trim().length < 3) return setError('Indiquez la référence de la transaction reçue par SMS.');
     setBusy(true);
@@ -119,111 +95,89 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6">
-      <ol className="relative space-y-8 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-slate-200">
-        <DepositStep n={1} title="Combien voulez-vous déposer ?" done={validAmount}>
-          {quickAmounts.length > 0 && (
-            <div className="mb-3 grid grid-cols-2 gap-2 min-[400px]:grid-cols-4">
-              {quickAmounts.map((a) => (
-                <button
-                  key={a}
-                  type="button"
-                  onClick={() => setAmount(String(a))}
-                  aria-pressed={value === a}
-                  className={`rounded-xl border px-2 py-2.5 text-sm font-semibold transition ${value === a ? 'border-night-900 bg-night-900 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-night-300'}`}
-                >
-                  {formatPrice(a, CURRENCY)}
-                </button>
-              ))}
-            </div>
-          )}
-          <label htmlFor="dep-amount" className="sr-only">Montant (FC)</label>
-          <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 focus-within:border-accent-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-accent-500/30">
-            <input
-              id="dep-amount"
-              type="number"
-              min={0}
-              step="1"
-              inputMode="numeric"
-              className="h-14 w-full bg-transparent text-xl font-bold text-slate-900 placeholder:text-base placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
-              placeholder="Autre montant"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <span className="text-sm font-semibold text-slate-400">FC</span>
-          </div>
-          {minimum > 0 && <p className="mt-1.5 text-xs text-slate-500">Minimum : {formatPrice(minimum, CURRENCY)}</p>}
-        </DepositStep>
+    <form onSubmit={onSubmit} className="space-y-5 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+      {/* Moyens de paiement */}
+      <div className="flex gap-2 overflow-x-auto rounded-2xl bg-slate-100 p-1.5" role="tablist" aria-label="Moyen de paiement">
+        {list.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="tab"
+            aria-selected={c.id === channel.id}
+            onClick={() => setChannelId(c.id)}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${c.id === channel.id ? 'bg-white text-accent-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            <PaymentLogo name={c.name} className="h-6 w-6" />
+            {c.name}
+          </button>
+        ))}
+      </div>
 
-        <DepositStep n={2} title="Envoyez l'argent sur ce compte">
-          {list.length > 1 && (
-            <div className="mb-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Moyen de paiement">
-              {list.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={c.id === channel.id}
-                  onClick={() => setChannelId(c.id)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${c.id === channel.id ? 'border-night-900 bg-night-900 text-white' : 'border-slate-200 text-slate-600 hover:border-night-300'}`}
-                >
-                  <PaymentLogo name={c.name} className="h-5 w-5" /> {c.name}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-night-800 via-night-900 to-night-950 p-5 text-white shadow-lg">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-accent-500/20" aria-hidden="true" />
-            <div className="relative flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-night-900">
-                <PaymentLogo name={channel.name} className="h-4 w-4" /> {channel.name}
-              </span>
-              <span className="text-xs text-night-200">{validAmount ? `À envoyer : ${formatPrice(value, CURRENCY)}` : 'Montant à choisir'}</span>
-            </div>
-            <p className="relative mt-5 text-xs uppercase tracking-widest text-night-200">Numéro du compte</p>
-            <div className="relative mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-              <p className="whitespace-nowrap font-mono text-[1.4rem] font-bold tracking-wide min-[400px]:text-2xl sm:text-3xl">{channel.account_number}</p>
-              <CopyButton value={channel.account_number} label="Numéro" onDark />
-            </div>
-            {channel.account_name && <p className="relative mt-2 text-sm font-medium uppercase tracking-wide text-night-100">{channel.account_name}</p>}
+      <div>
+        <label htmlFor="dep-amount" className="label text-base">Montant (FC)</label>
+        <input
+          id="dep-amount"
+          type="number"
+          min={0}
+          step="1"
+          inputMode="numeric"
+          className="input h-14 rounded-2xl"
+          placeholder={minimum > 0 ? `Ex : 20000 (minimum ${formatPrice(minimum, CURRENCY)})` : 'Ex : 20000'}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+      </div>
+
+      {/* Instructions de paiement */}
+      <div className="space-y-4 rounded-2xl border border-accent-200 bg-accent-50/60 p-4">
+        <p className="flex items-center gap-2 text-base font-bold text-accent-900">
+          <PaymentLogo name={channel.name} className="h-7 w-7" /> Effectuez le paiement vers {channel.name}
+        </p>
+        <div>
+          <p className="text-sm text-slate-500">Montant total payable</p>
+          <p className="text-2xl font-extrabold text-accent-900">{validAmount ? formatPrice(value, CURRENCY) : '— FC'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-slate-500">Compte {channel.name}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="break-all text-2xl font-extrabold tracking-wide text-accent-900">{channel.account_number}</p>
+            <CopyButton value={channel.account_number} label="Numéro" solid />
           </div>
-          {channel.ussd_code && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-night-50 px-4 py-3">
-              <div>
-                <p className="text-xs text-night-600">Code à composer</p>
-                <p className="font-mono text-lg font-bold text-night-900">{channel.ussd_code}</p>
-              </div>
+          {channel.account_name && <p className="text-sm text-slate-600">{channel.account_name}</p>}
+        </div>
+        {channel.ussd_code && (
+          <div>
+            <p className="text-sm text-slate-500">Code / procédure rapide</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-mono text-xl font-bold text-accent-900">{channel.ussd_code}</p>
               <CopyButton value={channel.ussd_code} label="Code" />
             </div>
-          )}
-          {guide && (
-            <details className="group mt-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-slate-700">
-                Comment payer ?
-                <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
-              </summary>
-              <p className="mt-2 whitespace-pre-line text-slate-600">{guide}</p>
-            </details>
-          )}
-        </DepositStep>
+          </div>
+        )}
+        {(channel.instructions || settings?.deposit_instructions) && (
+          <div>
+            <p className="text-sm text-slate-500">Guide de paiement</p>
+            <p className="whitespace-pre-line text-sm text-slate-700">{channel.instructions || settings?.deposit_instructions}</p>
+          </div>
+        )}
+      </div>
 
-        <DepositStep n={3} title="Confirmez votre dépôt">
-          <label htmlFor="dep-ref" className="mb-1.5 block text-sm text-slate-600">Référence reçue par SMS après le paiement</label>
-          <input
-            id="dep-ref"
-            className="input h-14 rounded-2xl font-mono"
-            maxLength={120}
-            placeholder="Ex : MP240912.1234.A56789"
-            value={reference}
-            onChange={(e) => setReference(e.target.value)}
-          />
-          {error && <div className="mt-3"><Alert tone="danger">{error}</Alert></div>}
-          <button className="btn-primary mt-4 h-14 w-full rounded-2xl text-base shadow-md" disabled={busy}>
-            {busy && <Spinner className="h-4 w-4" />} Envoyer ma demande de dépôt
-          </button>
-          <p className="mt-2 text-center text-xs text-slate-500">Votre solde est crédité dès que le paiement est vérifié.</p>
-        </DepositStep>
-      </ol>
+      <div>
+        <label htmlFor="dep-ref" className="label text-base">Référence de la transaction</label>
+        <input
+          id="dep-ref"
+          className="input h-14 rounded-2xl"
+          maxLength={120}
+          placeholder="Ex : MP240912.1234.A56789"
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+        />
+      </div>
+
+      {error && <Alert tone="danger">{error}</Alert>}
+      <button className="btn h-14 w-full rounded-2xl bg-accent-700 text-base text-white hover:bg-accent-800" disabled={busy}>
+        {busy && <Spinner className="h-4 w-4" />} Confirmer le dépôt
+      </button>
     </form>
   );
 }
