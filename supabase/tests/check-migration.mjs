@@ -514,5 +514,46 @@ await db.query(`select grant_referral_commission($1, 1000, 'CDF', 'order', gen_r
 (await bal(D)) - dComm === 250 ? ok('filleul avec dépôt validé : commission de 25 % versée au parrain qui a acheté') : fail('commission avec dépôt', (await bal(D)) - dComm);
 await expectOk('retrait accepté avec achat et dépôt validé', () => as(E, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`));
 
+console.log('25. Bonus surprise');
+await expectError('un client ne crée pas de bonus', () => as(B, `select admin_create_gift('Bonus', null, 500, 2)`), /administrateurs/);
+const gift = (await as(ADMIN, `select * from admin_create_gift('Bonus réunion', 'Merci d''être venus', 500, 2, now() + interval '1 day')`)).rows[0];
+/^[A-Z0-9]{8}$/.test(gift.code) ? ok(`code généré : ${gift.code}`) : fail('code', gift.code);
+(await as(B, `select id from gift_codes`)).rows.length === 0 ? ok('les membres ne voient pas les codes') : fail('codes visibles', 'oui');
+await expectError('code invalide refusé', () => as(B, `select claim_gift('ZZZZZZZZ')`), /Code invalide/);
+await expectError('membre sans achat refusé', () => as(NEW1, `select claim_gift($1)`, [gift.code]), /déjà acheté un produit/);
+const bGift = await bal(B);
+await expectOk('1er gagnant (code en minuscules accepté)', () => as(B, `select claim_gift($1)`, [gift.code.toLowerCase()]));
+(await bal(B)) - bGift === 500 ? ok('500 FC crédités au gagnant') : fail('crédit bonus', (await bal(B)) - bGift);
+await expectError('même membre une 2e fois refusé', () => as(B, `select claim_gift($1)`, [gift.code]), /déjà reçu/);
+await expectOk('2e gagnant', () => as(C, `select claim_gift($1)`, [gift.code]));
+await expectError('3e personne : trop tard', () => as(E, `select claim_gift($1)`, [gift.code]), /tous les bonus ont déjà été distribués/);
+const listed = (await as(ADMIN, `select winners from admin_list_gifts() where id = $1`, [gift.id])).rows[0];
+listed.winners === 2 ? ok('l\'admin voit 2 gagnants sur 2') : fail('gagnants', JSON.stringify(listed));
+(await as(ADMIN, `select * from admin_gift_winners($1)`, [gift.id])).rows.length === 2 ? ok('liste des gagnants') : fail('liste gagnants', '');
+(await as(B, `select * from my_gift_claims()`)).rows.length === 1 ? ok('le membre voit son bonus reçu') : fail('my_gift_claims', '');
+const gift2 = (await as(ADMIN, `select * from admin_create_gift('Bonus coupé', null, 100, 10)`)).rows[0];
+await as(ADMIN, `select admin_set_gift_active($1, false)`, [gift2.id]);
+await expectError('bonus désactivé refusé', () => as(E, `select claim_gift($1)`, [gift2.code]), /plus disponible/);
+await db.exec(`update gift_codes set is_active = true, expires_at = now() - interval '1 minute' where id = '${gift2.id}'`);
+await expectError('bonus expiré refusé', () => as(E, `select claim_gift($1)`, [gift2.code]), /expiré/);
+
+console.log('26. Notifications');
+const notif = async (uid, title) => (await db.query(`select count(*)::int n from notifications where user_id = $1 and title = $2`, [uid, title])).rows[0].n;
+(await notif(D, 'Achat confirmé')) >= 1 ? ok('achat confirmé notifié') : fail('achat confirmé', 0);
+(await notif(D, 'Nouveau membre dans votre équipe')) === 1 ? ok('nouveau filleul notifié au parrain') : fail('nouveau filleul', await notif(D, 'Nouveau membre dans votre équipe'));
+(await notif(ADMIN, 'Retrait à traiter')) >= 1 ? ok('admin prévenu d\'un retrait à traiter') : fail('alerte retrait', 0);
+(await notif(B, 'Bonus surprise reçu')) === 1 ? ok('bonus reçu notifié') : fail('bonus notifié', 0);
+await as(ADMIN, `insert into announcements (title, body, status) values ('Réunion ce soir', 'Rendez-vous à 19 h', 'published')`);
+(await notif(E, 'Réunion ce soir')) === 1 && (await notif(B, 'Réunion ce soir')) === 1 ? ok('annonce publiée envoyée à tous les membres') : fail('annonce', '');
+await expectOk('appareil enregistré pour les notifications push', () => as(E, `select save_push_subscription('https://push.example/abc', 'cle', 'auth')`));
+await expectOk('notification enregistrée même sans fonction push configurée', () => db.query(`select notify_user($1, 'Test push', 'ok', '/compte')`, [E]));
+await as(B, `select save_push_subscription('https://push.example/abc', 'cle', 'auth')`);
+(await db.query(`select user_id from push_subscriptions where endpoint = 'https://push.example/abc'`)).rows[0].user_id === B
+  ? ok('un appareil passe au dernier compte connecté')
+  : fail('appareil', '');
+(await as(E, `select * from push_subscriptions`).catch(() => ({ rows: [] }))).rows.length === 0
+  ? ok('abonnements push illisibles par les membres')
+  : fail('abonnements visibles', '');
+
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

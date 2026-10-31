@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.drivest.app",
+        "sha256_cert_fingerprints": ["82:AD:8D:BD:1A:14:3A:E2:99:A1:87:48:10:C6:01:A4:2D:8B:3E:F7:4C:B2:2B:98:C8:F3:A7:0E:59:A1:58:0B"]
+      }
+    }]

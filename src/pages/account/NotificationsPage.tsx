@@ -3,6 +3,7 @@ import { Bell, CheckCheck } from 'lucide-react';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/Feedback';
+import { PushOptIn } from '../../components/PushOptIn';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -36,6 +37,7 @@ export default function NotificationsPage() {
         description={unread ? `${unread} notification${unread > 1 ? 's' : ''} non lue${unread > 1 ? 's' : ''}` : 'Vous êtes à jour.'}
         actions={unread > 0 && <button className="btn-secondary btn-sm" onClick={markAll}><CheckCheck className="h-4 w-4" /> Tout marquer comme lu</button>}
       />
+      <PushOptIn alwaysShowStatus />
       {loading ? (
         <LoadingState />
       ) : error ? (

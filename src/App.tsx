@@ -6,6 +6,7 @@ import {
   Bell,
   Car,
   CreditCard,
+  Gift,
   LayoutDashboard,
   LifeBuoy,
   Megaphone,
@@ -51,6 +52,7 @@ const WalletPage = lazyPage(() => import('./pages/account/WalletPage'));
 const DepositPage = lazyPage(() => import('./pages/account/DepositPage'));
 const WithdrawalPage = lazyPage(() => import('./pages/account/WithdrawalPage'));
 const ReferralPage = lazyPage(() => import('./pages/account/ReferralPage'));
+const GiftPage = lazyPage(() => import('./pages/account/GiftPage'));
 
 const AdminDashboardPage = lazyPage(() => import('./pages/admin/AdminDashboardPage'));
 const AdminVehiclesPage = lazyPage(() => import('./pages/admin/AdminVehiclesPage'));
@@ -68,6 +70,7 @@ const AdminSettingsPage = lazyPage(() => import('./pages/admin/AdminSettingsPage
 const AdminRulesPage = lazyPage(() => import('./pages/admin/AdminRulesPage'));
 const AdminRevenuePage = lazyPage(() => import('./pages/admin/AdminRevenuePage'));
 const AdminWalletPage = lazyPage(() => import('./pages/admin/AdminWalletPage'));
+const AdminGiftsPage = lazyPage(() => import('./pages/admin/AdminGiftsPage'));
 
 function accountNav(s: PlatformSettings | null): SideNavItem[] {
   return [
@@ -78,6 +81,7 @@ function accountNav(s: PlatformSettings | null): SideNavItem[] {
           { to: '/compte/depot', label: 'Dépôt', icon: ArrowDownToLine },
           { to: '/compte/retrait', label: 'Retrait', icon: ArrowUpFromLine },
           { to: '/compte/portefeuille', label: 'Portefeuille', icon: Wallet },
+          { to: '/compte/bonus', label: 'Bonus surprise', icon: Gift },
         ]
       : []),
     ...(s?.feature_referral ? [{ to: '/compte/parrainage', label: 'Mon équipe', icon: UserPlus }] : []),
@@ -97,6 +101,7 @@ const ADMIN_NAV: SideNavItem[] = [
   { to: '/admin/portefeuilles', label: 'Dépôts et retraits', icon: Wallet },
   { to: '/admin/regles', label: 'Règles et bonus', icon: SlidersHorizontal },
   { to: '/admin/revenus', label: 'Revenus des produits', icon: TrendingUp },
+  { to: '/admin/bonus', label: 'Bonus surprise', icon: Gift },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: Users },
   { to: '/admin/support', label: 'Service client', icon: LifeBuoy },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone },
@@ -150,6 +155,7 @@ export default function App() {
           <Route path="depot" element={<DepositPage />} />
           <Route path="retrait" element={<WithdrawalPage />} />
           <Route path="parrainage" element={<ReferralPage />} />
+          <Route path="bonus" element={<GiftPage />} />
         </Route>
 
         <Route
@@ -176,6 +182,7 @@ export default function App() {
           <Route path="parametres" element={<AdminSettingsPage />} />
           <Route path="regles" element={<AdminRulesPage />} />
           <Route path="revenus" element={<AdminRevenuePage />} />
+          <Route path="bonus" element={<AdminGiftsPage />} />
           <Route path="portefeuilles" element={<AdminWalletPage />} />
         </Route>
 

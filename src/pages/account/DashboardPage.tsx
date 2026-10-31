@@ -4,6 +4,7 @@ import {
   Bell,
   ChevronRight,
   Copy,
+  Gift,
   LifeBuoy,
   Lock,
   LogOut,
@@ -16,7 +17,9 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { AppDownloadCard } from '../../components/AppDownloadCard';
 import { PageMeta } from '../../components/PageMeta';
+import { PushOptIn } from '../../components/PushOptIn';
 import { ErrorState, LoadingState } from '../../components/ui/Feedback';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -148,7 +151,12 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <section className="mt-6">
+      <div className="mt-6">
+        <AppDownloadCard />
+        <PushOptIn />
+      </div>
+
+      <section>
         <h2 className="mb-3 text-lg font-bold text-slate-900">Mes actifs</h2>
         <div className="grid grid-cols-4 gap-1 rounded-3xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
           <Shortcut to="/compte/transactions" label="Facture" icon={Receipt} tone="bg-accent-50 text-accent-700" />
@@ -160,6 +168,7 @@ export default function DashboardPage() {
 
       <section className="mt-6 space-y-3">
         <h2 className="text-lg font-bold text-slate-900">Centre personnel</h2>
+        {walletEnabled && <MenuRow to="/compte/bonus" label="Bonus surprise" icon={Gift} tone="bg-pink-50 text-pink-600" />}
         {settings?.feature_referral && <MenuRow to="/compte/parrainage" label="Mon équipe" icon={Users} tone="bg-orange-50 text-orange-600" />}
         <MenuRow to="/messages" label="Messages" icon={MessageSquare} tone="bg-violet-50 text-violet-600" />
         <MenuRow to="/compte/notifications" label="Notifications" icon={Bell} tone="bg-night-50 text-night-600" badge={data?.unread} />

@@ -13,3 +13,6 @@ supabase/.temp
 
 .vercel
 .env*
+
+# Clé de signature de l application Android (ne jamais publier)
+android-signing/
