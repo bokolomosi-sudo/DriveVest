@@ -70,6 +70,12 @@ export async function adminResetWithdrawalAccount(userId: string, reason: string
   if (error) throw error;
 }
 
+/** Super admin uniquement : nomme ou retire un administrateur. */
+export async function superAdminSetAdmin(userId: string, makeAdmin: boolean): Promise<void> {
+  const { error } = await db().rpc('super_admin_set_admin', { p_user_id: userId, p_make_admin: makeAdmin });
+  if (error) throw error;
+}
+
 export async function adminSetUserBlocked(userId: string, blocked: boolean, reason: string): Promise<void> {
   const { error } = await db().rpc('admin_set_user_blocked', {
     p_user_id: userId,

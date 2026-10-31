@@ -13,6 +13,8 @@ interface AuthContextValue {
   roles: AppRole[];
   /** Indication d'interface uniquement : les droits réels sont vérifiés par RLS et les fonctions SQL. */
   isAdmin: boolean;
+  /** Super administrateur : nomme les admins et règle les paramètres sensibles (vérifié aussi par la base). */
+  isSuperAdmin: boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -119,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       roles,
       isAdmin: roles.includes('admin') || roles.includes('super_admin'),
+      isSuperAdmin: roles.includes('super_admin'),
       loading: !sessionLoaded || profileLoading,
       refreshProfile: () => loadProfile(userId),
       signOut: async () => {

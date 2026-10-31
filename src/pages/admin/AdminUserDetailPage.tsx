@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Lock, MapPin, Phone, ShieldCheck, Unlock, Wallet } from 'lucide-react';
+import { ArrowLeft, KeyRound, Lock, MapPin, Phone, ShieldCheck, Unlock, UserCog, Wallet } from 'lucide-react';
 import { OperationsList } from '../../components/finance/WalletForms';
 import { PaymentName } from '../../components/finance/PaymentLogo';
 import { PageMeta } from '../../components/PageMeta';
@@ -21,6 +21,7 @@ import {
   adminResetWithdrawalAccount,
   adminSetUserBlocked,
   adminUserOverview,
+  superAdminSetAdmin,
 } from '../../services/admin';
 import { listMyOrders } from '../../services/orders';
 import { adminWalletAdjustment, listMyWalletTransactions } from '../../services/wallet';
@@ -56,7 +57,7 @@ function randomPassword(): string {
 
 export default function AdminUserDetailPage() {
   const { id = '' } = useParams();
-  const { user: me } = useAuth();
+  const { user: me, isSuperAdmin } = useAuth();
   const { notify } = useToast();
   const member = useAsync(() => adminGetUser(id), [id]);
   const overview = useAsync(() => adminUserOverview(id), [id]);
@@ -123,6 +124,24 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  const toggleAdmin = async () => {
+    const u = member.data;
+    if (!u || busy) return;
+    const makeAdmin = !u.roles.includes('admin');
+    const name = u.full_name || formatLocalPhone(u.phone);
+    if (!window.confirm(makeAdmin ? `Nommer ${name} administrateur ?` : `Retirer le rôle administrateur à ${name} ?`)) return;
+    setBusy(true);
+    try {
+      await superAdminSetAdmin(u.id, makeAdmin);
+      notify('success', makeAdmin ? `${name} est maintenant administrateur.` : `${name} n'est plus administrateur.`);
+      await member.reload();
+    } catch (err) {
+      notify('error', toErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (member.loading) return <LoadingState />;
   if (member.error) return <ErrorState message={member.error} onRetry={member.reload} />;
   const u = member.data;
@@ -150,7 +169,7 @@ export default function AdminUserDetailPage() {
           </div>
           <div className="flex flex-col items-end gap-1">
             {u.is_blocked ? <Badge tone="danger">Bloqué</Badge> : <Badge tone="success">Actif</Badge>}
-            {u.roles.includes('admin') || u.roles.includes('super_admin') ? <Badge tone="info">Administrateur</Badge> : null}
+            {u.roles.includes('super_admin') ? <Badge tone="info">Super admin</Badge> : u.roles.includes('admin') ? <Badge tone="info">Administrateur</Badge> : null}
           </div>
         </div>
         {u.is_blocked && u.blocked_reason && <p className="mt-3 rounded-xl bg-red-500/20 p-2 text-sm">Motif du blocage : {u.blocked_reason}</p>}
@@ -184,6 +203,22 @@ export default function AdminUserDetailPage() {
           <span className="text-xs">{u.is_blocked ? 'Débloquer le compte' : 'Bloquer le compte'}</span>
         </button>
       </div>
+
+      {/* Rôle : seul le super admin nomme ou retire les administrateurs */}
+      {isSuperAdmin && !isMe && !u.roles.includes('super_admin') && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-night-50 p-4">
+          <p className="text-sm text-night-900">
+            {u.roles.includes('admin') ? 'Ce membre est administrateur.' : 'Donner à ce membre l’accès à l’administration ?'}
+          </p>
+          <button
+            className={u.roles.includes('admin') ? 'btn border border-red-200 bg-white text-red-600 hover:bg-red-50' : 'btn-primary'}
+            onClick={toggleAdmin}
+            disabled={busy}
+          >
+            <UserCog className="h-4 w-4" /> {u.roles.includes('admin') ? 'Retirer le rôle admin' : 'Nommer administrateur'}
+          </button>
+        </div>
+      )}
 
       {/* Chiffres */}
       {overview.loading ? <LoadingState /> : overview.error ? <ErrorState message={overview.error} onRetry={overview.reload} /> : o && (
