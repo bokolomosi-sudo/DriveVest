@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle } from 'lucide-react';
 import { Spinner } from '../ui/Feedback';
 import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
-import { formatDate, formatPrice } from '../../lib/format';
+import { formatPrice } from '../../lib/format';
 import { vehicleImageUrl } from '../../services/vehicles';
 import { buyVehicleWithWallet } from '../../services/wallet';
 import { vehicleDailyAmount } from '../../lib/productYield';
@@ -21,14 +21,7 @@ function InfoPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Date de fin si le produit est acheté aujourd'hui. */
-function expirationDate(durationDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + durationDays);
-  return formatDate(d.toISOString());
-}
-
-/** Carte produit : nom, durée, date d'expiration, photo, prix, détails et achat immédiat. */
+/** Carte produit : nom, durée, photo, prix, gain total, détails et achat immédiat. */
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const { notify } = useToast();
   const cover = vehicle.images?.[0];
@@ -68,7 +61,6 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         <div className="mt-3 flex gap-3">
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             {vehicle.duration_days && <InfoPill label="Durée" value={`${vehicle.duration_days} jours`} />}
-            {vehicle.duration_days && <InfoPill label="Expire le" value={expirationDate(vehicle.duration_days)} />}
             {vehicleDailyAmount(vehicle) > 0 && <InfoPill label="Revenu / jour" value={formatPrice(vehicleDailyAmount(vehicle), vehicle.currency)} />}
           </div>
           <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-inner min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32">

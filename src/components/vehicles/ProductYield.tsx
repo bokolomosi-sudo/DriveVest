@@ -20,12 +20,12 @@ export function ProductYieldBlock({
   const currency = vehicle.currency;
 
   return (
-    <div className={compact ? 'space-y-1 text-xs text-slate-600' : 'mt-3 space-y-1 rounded-xl bg-green-50 p-3 text-sm text-green-900'}>
-      <p className={compact ? 'font-semibold text-slate-800' : 'font-semibold'}>
-        Revenu indicatif : {formatPrice(yieldInfo.daily, currency)}/jour
-      </p>
-      <p className={compact ? 'font-semibold text-green-700' : 'font-semibold'}>
-        Gain sur {yieldInfo.duration} jours : {formatPrice(yieldInfo.net, currency)}
+    <div className={compact ? 'text-sm text-slate-600' : 'mt-3 space-y-1 rounded-xl bg-green-50 p-3 text-sm text-green-900'}>
+      {/* Sur la carte, le revenu par jour est déjà affiché dans les infos du produit */}
+      {!compact && <p>Revenu / jour : {formatPrice(yieldInfo.daily, currency)}</p>}
+      <p className="flex flex-wrap items-baseline justify-between gap-x-2">
+        <span>Gain total</span>
+        <strong className="text-lg font-extrabold text-green-700">{formatPrice(yieldInfo.net, currency)}</strong>
       </p>
       {!compact && (
         <p className="mt-2 text-xs text-green-800">
