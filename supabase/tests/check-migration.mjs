@@ -220,7 +220,7 @@ await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'App
 await as(INV, `select pay_order_with_wallet($1)`, [o3.rows[0].id]);
 const st4 = await db.query(`select status from orders where id = $1`, [o3.rows[0].id]);
 st4.rows[0].status === 'payment_confirmed' && (await bal(INV)) === 5900 ? ok('commande payée depuis le portefeuille') : fail('paiement portefeuille', st4.rows[0].status + ' ' + await bal(INV));
-(await bal(OTHER)) === 750 ? ok('commission de 5 % sur la commande : +750') : fail('commission commande', await bal(OTHER));
+(await bal(OTHER)) === 0 ? ok('parrain sans achat : aucune commission sur la commande du filleul') : fail('commission sans achat', await bal(OTHER));
 const refs = await as(OTHER, `select * from my_referrals()`);
 refs.rows.length === 1 && refs.rows[0].display_name === 'Jean I.' ? ok(`équipe de parrainage : ${refs.rows[0].display_name}`) : fail('équipe', JSON.stringify(refs.rows));
 const leak = await as(OTHER, `select id from investment_participations`);
@@ -235,11 +235,16 @@ await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('$
 await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('${B}', 'b@test.local', '{"referral_code":"${await codeOf(R3)}"}')`);
 await as(ADMIN, `update platform_settings set referral_commission_percent = 25, referral_level2_percent = 5, referral_level3_percent = 1, referral_on_orders = true`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Approvisionnement de test pour le parrainage')`, [B]);
+// Achats simulés : R3 (niveau 1) et R1 (niveau 3) ont acheté, R2 (niveau 2) non
+const simulated = await db.query(`insert into orders (user_id, status, total_amount, currency, idempotency_key)
+  values ('${R3}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()), ('${R1}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()) returning id`);
 await expectOk('le filleul achète avec son portefeuille', () => as(B, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]));
 const lv = [await bal(R3, 'CDF'), await bal(R2, 'CDF'), await bal(R1, 'CDF')];
-lv[0] === 3750 && lv[1] === 750 && lv[2] === 150
-  ? ok('commissions 25 % / 5 % / 1 % sur 15 000 CDF : 3 750 / 750 / 150')
+lv[0] === 3750 && lv[1] === 0 && lv[2] === 150
+  ? ok('commissions 25 % / 1 % versées (3 750 / 150), rien pour le niveau 2 qui n\'a pas acheté')
   : fail('3 niveaux', JSON.stringify(lv));
+// Retour à l'état « sans achat » pour R1 et R3 (utilisé par la suite des tests)
+await db.query(`update orders set status = 'cancelled' where id = any($1::uuid[])`, [simulated.rows.map((r) => r.id)]);
 const team = await as(R1, `select level from my_referrals()`);
 JSON.stringify(team.rows.map((r) => r.level)) === '[1,2,3]' ? ok('équipe visible sur 3 niveaux') : fail('équipe', JSON.stringify(team.rows));
 await expectError('produit en dollars refusé', () => as(ADMIN, `insert into vehicles (brand, model, condition, currency) values ('X', 'Y', 'new', 'USD')`), /vehicles_currency_cdf/);
@@ -294,12 +299,17 @@ prof16.rows[0].province === 'Nord-Kivu' && prof16.rows[0].city === 'Goma' ? ok('
 
 await expectError('un client ne modifie pas les paliers', () => as(R3, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":99999}]')`), /administrateurs/);
 const grantsOf = async (uid) => (await db.query(`select invited_count, amount from team_reward_grants where user_id = $1 order by invited_count`, [uid])).rows;
-const r3Before = await bal(R3, 'CDF');
 await as(ADMIN, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":500},{"invited_count":2,"amount":1000}]')`);
+(await grantsOf(R3)).length === 0
+  ? ok('palier atteint mais aucun achat personnel : pas de récompense')
+  : fail('récompense sans achat', JSON.stringify(await grantsOf(R3)));
+await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test achat du parrain')`, [R3]);
+const r3Before = await bal(R3, 'CDF');
+await as(R3, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]);
 const r3After = await bal(R3, 'CDF');
-(await grantsOf(R3)).length === 1 && r3After - r3Before === 500
-  ? ok('palier déjà atteint crédité dès l\'enregistrement : +500 FC')
-  : fail('palier immédiat', JSON.stringify({ grants: await grantsOf(R3), diff: r3After - r3Before }));
+(await grantsOf(R3)).length === 1 && r3After - r3Before === 500 - 15000
+  ? ok('palier déjà atteint crédité dès le premier achat du parrain : +500 FC')
+  : fail('palier au premier achat', JSON.stringify({ grants: await grantsOf(R3), diff: r3After - r3Before }));
 await as(ADMIN, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":500},{"invited_count":2,"amount":1000}]')`);
 (await grantsOf(R3)).length === 1 ? ok('pas de double versement') : fail('doublon', JSON.stringify(await grantsOf(R3)));
 
