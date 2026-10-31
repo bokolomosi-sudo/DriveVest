@@ -94,7 +94,7 @@ export default function MessagesPage() {
           />
           <MessageCard
             icon={MessageCircle}
-            tone="bg-gradient-to-br from-emerald-500 to-green-600"
+            tone="bg-gradient-to-br from-accent-500 to-accent-600"
             title="Groupes WhatsApp"
             subtitle={whatsapp ? 'Rejoignez la communauté Drivest.' : 'Lien WhatsApp pas encore disponible.'}
             href={whatsapp}

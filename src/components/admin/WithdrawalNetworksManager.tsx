@@ -76,7 +76,7 @@ export function WithdrawalNetworksManager() {
 
       <form onSubmit={add} className="mb-4 flex gap-2">
         <input className="input" placeholder="Ex. : Orange Money, M-Pesa" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} aria-label="Nom du réseau" />
-        <button className="btn shrink-0 bg-green-700 text-white hover:bg-green-800" disabled={busy}>
+        <button className="btn shrink-0 bg-accent-700 text-white hover:bg-accent-800" disabled={busy}>
           {busy ? <Spinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />} Ajouter
         </button>
       </form>

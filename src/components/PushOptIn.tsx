@@ -36,7 +36,7 @@ export function PushOptIn({ alwaysShowStatus = false }: { alwaysShowStatus?: boo
   if (!state || state === 'not-configured') return null;
   if (state === 'enabled') {
     return alwaysShowStatus ? (
-      <p className="mb-4 flex items-center gap-2 rounded-2xl bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+      <p className="mb-4 flex items-center gap-2 rounded-2xl bg-accent-50 px-4 py-3 text-sm font-medium text-accent-800">
         <BellRing className="h-4 w-4" /> Notifications activées sur cet appareil.
       </p>
     ) : null;

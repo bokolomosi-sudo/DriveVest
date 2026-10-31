@@ -87,7 +87,7 @@ export function DepositChannelsManager() {
           <h2 className="text-xl font-bold text-slate-900">Comptes de dépôt</h2>
           <p className="text-sm text-slate-500">Numéros affichés aux membres sur la page Dépôt.</p>
         </div>
-        <button className="btn bg-green-700 text-white hover:bg-green-800" onClick={() => { setEditing({ form: EMPTY }); setError(null); }}>
+        <button className="btn bg-accent-700 text-white hover:bg-accent-800" onClick={() => { setEditing({ form: EMPTY }); setError(null); }}>
           <Plus className="h-4 w-4" /> Ajouter un compte
         </button>
       </div>
@@ -104,7 +104,7 @@ export function DepositChannelsManager() {
                     <p className="font-bold text-slate-900"><PaymentName name={c.name} className="h-6 w-6" /></p>
                     <Badge tone={c.is_active ? 'success' : 'neutral'}>{c.is_active ? 'Visible' : 'Masqué'}</Badge>
                   </div>
-                  <p className="font-mono text-lg font-bold text-green-800">{c.account_number}</p>
+                  <p className="font-mono text-lg font-bold text-accent-800">{c.account_number}</p>
                   {c.account_name && <p className="text-sm text-slate-600">{c.account_name}</p>}
                   {c.ussd_code && <p className="font-mono text-sm text-slate-500">{c.ussd_code}</p>}
                 </div>
@@ -152,7 +152,7 @@ export function DepositChannelsManager() {
             {error && <Alert tone="danger">{error}</Alert>}
             <div className="flex justify-end gap-2">
               <button type="button" className="btn-secondary" onClick={() => setEditing(null)} disabled={busy}>Annuler</button>
-              <button className="btn bg-green-700 text-white hover:bg-green-800" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer</button>
+              <button className="btn bg-accent-700 text-white hover:bg-accent-800" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer</button>
             </div>
           </form>
         )}

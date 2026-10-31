@@ -71,10 +71,10 @@ export default function AdminRevenuePage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <div className="flex items-center gap-2 text-slate-500">
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-accent-600" />
             <span className="text-xs font-medium">Total distribué</span>
           </div>
-          <p className="mt-2 text-2xl font-black text-green-700">{formatPrice(totalDistributed, CURRENCY)}</p>
+          <p className="mt-2 text-2xl font-black text-accent-700">{formatPrice(totalDistributed, CURRENCY)}</p>
           <p className="mt-0.5 text-xs text-slate-400">Depuis l&apos;activation des versements automatiques</p>
         </div>
 
@@ -149,13 +149,13 @@ export default function AdminRevenuePage() {
                       </td>
                       <td className="whitespace-nowrap font-medium">{formatPrice(v.price, v.currency)}</td>
                       <td className="whitespace-nowrap">{v.duration_days ?? 0} jours</td>
-                      <td className="whitespace-nowrap font-bold text-green-700">{v.daily_revenue_percent} %</td>
-                      <td className="whitespace-nowrap font-bold text-green-700">
+                      <td className="whitespace-nowrap font-bold text-accent-700">{v.daily_revenue_percent} %</td>
+                      <td className="whitespace-nowrap font-bold text-accent-700">
                         {y ? formatPrice(y.daily, v.currency) : '—'}
                       </td>
                       <td className="whitespace-nowrap text-slate-600">{y ? formatPrice(y.gross, v.currency) : '—'}</td>
                       <td className="whitespace-nowrap text-slate-600">{y ? formatPrice(y.afterFees, v.currency) : '—'}</td>
-                      <td className="whitespace-nowrap font-bold text-green-700">
+                      <td className="whitespace-nowrap font-bold text-accent-700">
                         {y ? `+${formatPrice(y.net, v.currency)}` : '—'}
                       </td>
                       <td className="text-right">
@@ -220,7 +220,7 @@ export default function AdminRevenuePage() {
                         Jour {c.period_index}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap text-right font-bold text-green-700">
+                    <td className="whitespace-nowrap text-right font-bold text-accent-700">
                       +{formatPrice(c.amount, CURRENCY)}
                     </td>
                   </tr>

@@ -32,7 +32,7 @@ export default function MyProductsPage() {
         <div className="mb-4 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
             <p className="text-xs text-slate-500">Revenu du jour</p>
-            <p className="text-xl font-bold text-green-700">+{formatPrice(todayTotal, CURRENCY)}</p>
+            <p className="text-xl font-bold text-accent-700">+{formatPrice(todayTotal, CURRENCY)}</p>
           </div>
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
             <p className="text-xs text-slate-500">Revenus reçus au total</p>
@@ -80,7 +80,7 @@ export default function MyProductsPage() {
                       </p>
                     )}
                     {revenueOf(o.id).length > 0 && (
-                      <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-green-700">
+                      <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-accent-700">
                         <TrendingUp className="h-3.5 w-3.5" /> Revenus reçus : {formatPrice(revenueOf(o.id).reduce((t, r) => t + r.amount, 0), CURRENCY)}
                       </p>
                     )}
@@ -103,7 +103,7 @@ export default function MyProductsPage() {
                   <p className="truncate font-medium text-slate-900">{r.vehicle_label}</p>
                   <p className="text-xs text-slate-500">Revenu du {formatDate(r.revenue_at)}</p>
                 </div>
-                <p className="shrink-0 font-bold text-green-700">+{formatPrice(r.amount, CURRENCY)}</p>
+                <p className="shrink-0 font-bold text-accent-700">+{formatPrice(r.amount, CURRENCY)}</p>
               </li>
             ))}
           </ul>

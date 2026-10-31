@@ -86,7 +86,7 @@ export default function GiftPage() {
                   {g.message && <p className="text-sm text-slate-600">{g.message}</p>}
                   <p className="text-xs text-slate-500">Reçu le {formatDate(g.created_at, true)}</p>
                 </div>
-                <p className="shrink-0 font-bold text-green-700">+{formatPrice(g.amount, CURRENCY)}</p>
+                <p className="shrink-0 font-bold text-accent-700">+{formatPrice(g.amount, CURRENCY)}</p>
               </li>
             ))}
           </ul>

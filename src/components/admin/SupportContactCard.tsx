@@ -76,7 +76,7 @@ export function SupportContactCard() {
         </Field>
       </div>
       {error && <Alert tone="danger">{error}</Alert>}
-      <button className="btn bg-green-700 text-white hover:bg-green-800" disabled={busy}>
+      <button className="btn bg-accent-700 text-white hover:bg-accent-800" disabled={busy}>
         {busy && <Spinner className="h-4 w-4" />} Enregistrer
       </button>
     </form>

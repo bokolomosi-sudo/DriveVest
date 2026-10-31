@@ -5,7 +5,7 @@ export function PaymentLogo({ name, className = 'h-5 w-5' }: { name: string | nu
   if (name && /airtel/i.test(name)) {
     return <img src="/logos/airtel.png" alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
   }
-  return <Smartphone className={`${className} shrink-0 text-green-700`} aria-hidden="true" />;
+  return <Smartphone className={`${className} shrink-0 text-accent-700`} aria-hidden="true" />;
 }
 
 /** Nom du moyen de paiement précédé de son logo. */

@@ -90,7 +90,7 @@ function RewardTube({ percent, label }: { percent: number; label: string }) {
       aria-label={label}
     >
       <div
-        className="relative h-full rounded-full bg-gradient-to-b from-green-400 via-green-500 to-green-600 transition-[width] duration-1000 ease-out"
+        className="relative h-full rounded-full bg-gradient-to-b from-accent-400 via-accent-500 to-accent-600 transition-[width] duration-1000 ease-out"
         style={{ width: `${filled}%` }}
       >
         {/* Reflet du tuyau */}
@@ -107,7 +107,7 @@ function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
   return (
     <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center gap-2">
-        <Gift className="h-5 w-5 text-green-600" aria-hidden="true" />
+        <Gift className="h-5 w-5 text-accent-600" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-slate-900">Récompenses d'équipe</h2>
       </div>
       <p className="mt-1 text-sm text-slate-500">
@@ -122,7 +122,7 @@ function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
             <li key={r.tier_id}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
                 <p className="font-medium text-slate-900">{r.invited_count} invités directs (ayant investi)</p>
-                <p className={done ? 'font-semibold text-green-700' : 'text-slate-500'}>
+                <p className={done ? 'font-semibold text-accent-700' : 'text-slate-500'}>
                   {done ? (
                     <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /> {formatPrice(r.amount, CURRENCY)} reçus</span>
                   ) : (

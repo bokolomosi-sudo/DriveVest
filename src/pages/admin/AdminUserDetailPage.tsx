@@ -176,7 +176,7 @@ export default function AdminUserDetailPage() {
           <ShieldCheck className="h-5 w-5" /> <span className="text-xs">Réinitialiser le retrait</span>
         </button>
         <button
-          className={`btn h-auto flex-col gap-1 rounded-2xl py-3 ${u.is_blocked ? 'bg-green-700 text-white hover:bg-green-800' : 'border border-red-200 bg-white text-red-600 hover:bg-red-50'}`}
+          className={`btn h-auto flex-col gap-1 rounded-2xl py-3 ${u.is_blocked ? 'bg-accent-700 text-white hover:bg-accent-800' : 'border border-red-200 bg-white text-red-600 hover:bg-red-50'}`}
           onClick={() => open('block')}
           disabled={isMe}
         >
@@ -188,7 +188,7 @@ export default function AdminUserDetailPage() {
       {/* Chiffres */}
       {overview.loading ? <LoadingState /> : overview.error ? <ErrorState message={overview.error} onRetry={overview.reload} /> : o && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat label="Solde disponible" value={formatPrice(o.balance, CURRENCY)} tone="text-green-700" />
+          <Stat label="Solde disponible" value={formatPrice(o.balance, CURRENCY)} tone="text-accent-700" />
           <Stat label="Dépôts validés" value={formatPrice(o.total_deposits, CURRENCY)} />
           <Stat label="Retraits payés" value={formatPrice(o.total_withdrawals, CURRENCY)} />
           <Stat label="Commissions" value={formatPrice(o.total_commissions, CURRENCY)} />
@@ -260,7 +260,7 @@ export default function AdminUserDetailPage() {
         footer={
           <>
             <button className="btn-secondary" onClick={() => setAction(null)} disabled={busy}>Annuler</button>
-            <button className={action === 'block' && !u.is_blocked ? 'btn-danger' : 'btn bg-green-700 text-white hover:bg-green-800'} onClick={submit} disabled={busy}>
+            <button className={action === 'block' && !u.is_blocked ? 'btn-danger' : 'btn bg-accent-700 text-white hover:bg-accent-800'} onClick={submit} disabled={busy}>
               {busy && <Spinner className="h-4 w-4" />} Confirmer
             </button>
           </>

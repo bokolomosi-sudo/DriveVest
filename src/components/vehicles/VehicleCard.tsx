@@ -63,7 +63,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             {vehicle.duration_days && <InfoPill label="Durée" value={`${vehicle.duration_days} jours`} />}
             {vehicleDailyAmount(vehicle) > 0 && <InfoPill label="Revenu / jour" value={formatPrice(vehicleDailyAmount(vehicle), vehicle.currency)} />}
-            {yieldInfo && <InfoPill label="Gain total" value={formatPrice(yieldInfo.net, vehicle.currency)} valueClassName="font-extrabold text-green-700" />}
+            {yieldInfo && <InfoPill label="Gain total" value={formatPrice(yieldInfo.net, vehicle.currency)} valueClassName="font-extrabold text-accent-700" />}
           </div>
           <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-inner min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32">
             {cover ? (
@@ -93,7 +93,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         {result && (
           <p
             role={result.ok ? 'status' : 'alert'}
-            className={`mt-3 flex items-start gap-2 rounded-xl px-3 py-2 text-sm font-medium ${result.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'}`}
+            className={`mt-3 flex items-start gap-2 rounded-xl px-3 py-2 text-sm font-medium ${result.ok ? 'bg-accent-50 text-accent-800' : 'bg-red-50 text-red-700'}`}
           >
             {result.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
             <span>

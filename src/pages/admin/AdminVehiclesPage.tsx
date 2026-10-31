@@ -113,7 +113,7 @@ export default function AdminVehiclesPage() {
                     <td className="whitespace-nowrap">
                       <p className="font-bold text-slate-900">{formatPrice(v.price, v.currency)}</p>
                       {daily > 0 ? (
-                        <p className="text-xs font-semibold text-green-700">
+                        <p className="text-xs font-semibold text-accent-700">
                           +{formatPrice(daily, v.currency)}/j ({v.daily_revenue_percent} %) · {v.duration_days ?? 0}j
                         </p>
                       ) : (

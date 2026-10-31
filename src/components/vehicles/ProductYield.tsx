@@ -20,15 +20,15 @@ export function ProductYieldBlock({
   const currency = vehicle.currency;
 
   return (
-    <div className={compact ? 'text-sm text-slate-600' : 'mt-3 space-y-1 rounded-xl bg-green-50 p-3 text-sm text-green-900'}>
+    <div className={compact ? 'text-sm text-slate-600' : 'mt-3 space-y-1 rounded-xl bg-accent-50 p-3 text-sm text-accent-900'}>
       {/* Sur la carte, le revenu par jour est déjà affiché dans les infos du produit */}
       {!compact && <p>Revenu / jour : {formatPrice(yieldInfo.daily, currency)}</p>}
       <p className="flex flex-wrap items-baseline justify-between gap-x-2">
         <span>Gain total</span>
-        <strong className="text-lg font-extrabold text-green-700">{formatPrice(yieldInfo.net, currency)}</strong>
+        <strong className="text-lg font-extrabold text-accent-700">{formatPrice(yieldInfo.net, currency)}</strong>
       </p>
       {!compact && (
-        <p className="mt-2 text-xs text-green-800">
+        <p className="mt-2 text-xs text-accent-800">
           Versé automatiquement chaque jour à l&apos;heure de votre achat, pendant {yieldInfo.duration} jours. Ensuite, plus rien n&apos;est versé.
         </p>
       )}

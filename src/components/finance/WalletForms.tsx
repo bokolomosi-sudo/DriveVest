@@ -41,7 +41,7 @@ function CopyButton({ value, label, solid }: { value: string; label: string; sol
     <button
       type="button"
       onClick={copy}
-      className={`btn shrink-0 rounded-xl px-4 py-2 ${solid ? 'bg-green-700 text-white hover:bg-green-800' : 'border border-green-700 bg-white text-green-800 hover:bg-green-50'}`}
+      className={`btn shrink-0 rounded-xl px-4 py-2 ${solid ? 'bg-accent-700 text-white hover:bg-accent-800' : 'border border-accent-700 bg-white text-accent-800 hover:bg-accent-50'}`}
     >
       Copier
     </button>
@@ -105,7 +105,7 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
             role="tab"
             aria-selected={c.id === channel.id}
             onClick={() => setChannelId(c.id)}
-            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${c.id === channel.id ? 'bg-white text-green-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${c.id === channel.id ? 'bg-white text-accent-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
           >
             <PaymentLogo name={c.name} className="h-6 w-6" />
             {c.name}
@@ -129,18 +129,18 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
       </div>
 
       {/* Instructions de paiement */}
-      <div className="space-y-4 rounded-2xl border border-green-200 bg-green-50/60 p-4">
-        <p className="flex items-center gap-2 text-base font-bold text-green-900">
+      <div className="space-y-4 rounded-2xl border border-accent-200 bg-accent-50/60 p-4">
+        <p className="flex items-center gap-2 text-base font-bold text-accent-900">
           <PaymentLogo name={channel.name} className="h-7 w-7" /> Effectuez le paiement vers {channel.name}
         </p>
         <div>
           <p className="text-sm text-slate-500">Montant total payable</p>
-          <p className="text-2xl font-extrabold text-green-900">{validAmount ? formatPrice(value, CURRENCY) : '— FC'}</p>
+          <p className="text-2xl font-extrabold text-accent-900">{validAmount ? formatPrice(value, CURRENCY) : '— FC'}</p>
         </div>
         <div>
           <p className="text-sm text-slate-500">Compte {channel.name}</p>
           <div className="flex items-center justify-between gap-3">
-            <p className="break-all text-2xl font-extrabold tracking-wide text-green-900">{channel.account_number}</p>
+            <p className="break-all text-2xl font-extrabold tracking-wide text-accent-900">{channel.account_number}</p>
             <CopyButton value={channel.account_number} label="Numéro" solid />
           </div>
           {channel.account_name && <p className="text-sm text-slate-600">{channel.account_name}</p>}
@@ -149,7 +149,7 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
           <div>
             <p className="text-sm text-slate-500">Code / procédure rapide</p>
             <div className="flex items-center justify-between gap-3">
-              <p className="font-mono text-xl font-bold text-green-900">{channel.ussd_code}</p>
+              <p className="font-mono text-xl font-bold text-accent-900">{channel.ussd_code}</p>
               <CopyButton value={channel.ussd_code} label="Code" />
             </div>
           </div>
@@ -175,7 +175,7 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
       </div>
 
       {error && <Alert tone="danger">{error}</Alert>}
-      <button className="btn h-14 w-full rounded-2xl bg-green-700 text-base text-white hover:bg-green-800" disabled={busy}>
+      <button className="btn h-14 w-full rounded-2xl bg-accent-700 text-base text-white hover:bg-accent-800" disabled={busy}>
         {busy && <Spinner className="h-4 w-4" />} Confirmer le dépôt
       </button>
     </form>
@@ -235,7 +235,7 @@ export function WithdrawalSetup({ onDone }: { onDone: () => void }) {
                 role="radio"
                 aria-checked={network === n.name}
                 onClick={() => setNetworkName(n.name)}
-                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${network === n.name ? 'border-green-600 bg-green-50 text-green-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${network === n.name ? 'border-accent-600 bg-accent-50 text-accent-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 <PaymentLogo name={n.name} className="h-5 w-5" /> {n.name}
               </button>

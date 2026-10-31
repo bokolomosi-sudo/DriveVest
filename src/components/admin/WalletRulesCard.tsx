@@ -84,7 +84,7 @@ export function WalletRulesCard({ title, keys, hint }: { title: string; keys: Ru
           </label>
         ))}
         <div className="flex items-end">
-          <button className="btn w-full bg-green-700 text-white hover:bg-green-800" disabled={busy}>
+          <button className="btn w-full bg-accent-700 text-white hover:bg-accent-800" disabled={busy}>
             {busy && <Spinner className="h-4 w-4" />} Enregistrer
           </button>
         </div>

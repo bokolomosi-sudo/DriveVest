@@ -110,7 +110,7 @@ export function NetworkStatus() {
       )}
       {backOnline ? (
         <div className="pointer-events-none fixed inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top))] z-[70] flex justify-center px-4" role="status">
-          <p className="flex items-center gap-2 rounded-full bg-green-700 px-4 py-2 text-sm font-medium text-white shadow-lg">
+          <p className="flex items-center gap-2 rounded-full bg-accent-700 px-4 py-2 text-sm font-medium text-white shadow-lg">
             <Wifi className="h-4 w-4" /> Connexion rétablie
           </p>
         </div>

@@ -60,12 +60,12 @@ function OperationCard({
         <div className="min-w-0">
           <p className="truncate text-base font-extrabold uppercase tracking-wide text-slate-900">{name}</p>
           <p className="text-sm text-slate-500">Portefeuille Drivest</p>
-          <Link to={`/admin/utilisateurs/${tx.user_id}`} className="text-sm font-medium text-green-700 underline underline-offset-2">
+          <Link to={`/admin/utilisateurs/${tx.user_id}`} className="text-sm font-medium text-accent-700 underline underline-offset-2">
             Voir le profil complet
           </Link>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-xl font-extrabold text-green-700 sm:text-2xl">{formatPrice(amount, tx.currency)}</p>
+          <p className="text-xl font-extrabold text-accent-700 sm:text-2xl">{formatPrice(amount, tx.currency)}</p>
           {kind === 'withdrawal' && fee > 0 && (
             <p className="text-xs text-slate-500">net (demandé {formatPrice(amount + fee, tx.currency)})</p>
           )}
@@ -101,7 +101,7 @@ function OperationCard({
           <button className="btn h-12 rounded-2xl border border-red-200 bg-white text-red-600 hover:bg-red-50" onClick={() => onAction(false)}>
             Rejeter
           </button>
-          <button className="btn h-12 rounded-2xl bg-green-700 text-base text-white hover:bg-green-800" onClick={() => onAction(true)}>
+          <button className="btn h-12 rounded-2xl bg-accent-700 text-base text-white hover:bg-accent-800" onClick={() => onAction(true)}>
             {kind === 'withdrawal' ? 'Marquer payé' : 'Valider'}
           </button>
         </div>
@@ -162,7 +162,7 @@ export function WalletOperations({ kind }: { kind: Kind }) {
             role="tab"
             aria-selected={view === v}
             onClick={() => setView(v)}
-            className={`rounded-xl py-2.5 text-sm font-semibold transition ${view === v ? 'bg-white text-green-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`rounded-xl py-2.5 text-sm font-semibold transition ${view === v ? 'bg-white text-accent-800 shadow' : 'text-slate-500 hover:text-slate-800'}`}
           >
             {v === 'pending' ? 'En traitement' : 'Historique'}
           </button>
@@ -192,7 +192,7 @@ export function WalletOperations({ kind }: { kind: Kind }) {
         footer={
           <>
             <button className="btn-secondary" onClick={() => setAction(null)} disabled={busy}>Annuler</button>
-            <button className={action?.approve ? 'btn bg-green-700 text-white hover:bg-green-800' : 'btn-danger'} onClick={submit} disabled={busy}>
+            <button className={action?.approve ? 'btn bg-accent-700 text-white hover:bg-accent-800' : 'btn-danger'} onClick={submit} disabled={busy}>
               {busy && <Spinner className="h-4 w-4" />} Confirmer
             </button>
           </>

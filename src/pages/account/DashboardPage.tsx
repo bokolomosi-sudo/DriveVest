@@ -173,7 +173,7 @@ export default function DashboardPage() {
         <MenuRow to="/messages" label="Messages" icon={MessageSquare} tone="bg-violet-50 text-violet-600" />
         <MenuRow to="/compte/notifications" label="Notifications" icon={Bell} tone="bg-night-50 text-night-600" badge={data?.unread} />
         <MenuRow to="/compte/profil" label="Mon profil" icon={User} tone="bg-sky-50 text-sky-600" />
-        <MenuRow to="/service-client" label="Service client" icon={LifeBuoy} tone="bg-emerald-50 text-emerald-600" />
+        <MenuRow to="/service-client" label="Service client" icon={LifeBuoy} tone="bg-accent-50 text-accent-600" />
         {isAdmin && <MenuRow to="/admin" label="Administration" icon={Shield} tone="bg-night-900 text-white" />}
         <MenuRow onClick={logout} label="Déconnexion" icon={LogOut} tone="bg-slate-100 text-slate-600" />
       </section>

@@ -397,12 +397,12 @@ export default function AdminVehicleFormPage() {
             </Field>
 
             {previewYield && (
-              <div className="rounded-2xl border border-green-200 bg-green-50/80 p-4 sm:col-span-2 lg:col-span-3">
-                <p className="text-sm font-bold text-green-950">Aperçu du rendement calculé pour l&apos;acheteur :</p>
+              <div className="rounded-2xl border border-accent-200 bg-accent-50/80 p-4 sm:col-span-2 lg:col-span-3">
+                <p className="text-sm font-bold text-accent-900">Aperçu du rendement calculé pour l&apos;acheteur :</p>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 sm:text-sm">
                   <div className="rounded-xl bg-white p-3 shadow-xs">
                     <span className="text-xs text-slate-500">Revenu indicatif</span>
-                    <p className="mt-0.5 text-base font-bold text-green-800">{formatPrice(previewYield.daily, CURRENCY)}/jour</p>
+                    <p className="mt-0.5 text-base font-bold text-accent-800">{formatPrice(previewYield.daily, CURRENCY)}/jour</p>
                   </div>
                   <div className="rounded-xl bg-white p-3 shadow-xs">
                     <span className="text-xs text-slate-500">Revenus cumulés</span>
@@ -414,10 +414,10 @@ export default function AdminVehicleFormPage() {
                   </div>
                   <div className="rounded-xl bg-white p-3 shadow-xs">
                     <span className="text-xs text-slate-500">Gain net</span>
-                    <p className="mt-0.5 text-base font-bold text-green-700">+{formatPrice(previewYield.net, CURRENCY)}</p>
+                    <p className="mt-0.5 text-base font-bold text-accent-700">+{formatPrice(previewYield.net, CURRENCY)}</p>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-green-800">
+                <p className="mt-2 text-xs text-accent-800">
                   Calculé sur {previewYield.duration} jours à {form.daily_revenue_percent} % par jour. Les versements se feront automatiquement chaque jour sans intervention manuelle.
                 </p>
               </div>
