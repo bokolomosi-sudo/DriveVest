@@ -2,7 +2,6 @@ import { TeamRewardTiersEditor } from '../../components/admin/TeamRewardTiersEdi
 import { WalletRulesCard } from '../../components/admin/WalletRulesCard';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
-import { SuperAdminLock } from '../../components/admin/SuperAdminLock';
 
 /** Tous les chiffres qui décident de l'argent des membres, réunis sur une page. */
 export default function AdminRulesPage() {
@@ -13,7 +12,6 @@ export default function AdminRulesPage() {
         title="Règles et bonus"
         description="Chaque modification s'applique aux opérations suivantes, pas à celles déjà faites, et reste dans le journal d'audit."
       />
-      <SuperAdminLock>
       <WalletRulesCard
         title="Retraits"
         hint="Les frais sont déduits du montant demandé : à 5 %, un retrait de 10 000 FC envoie 9 500 FC."
@@ -30,7 +28,6 @@ export default function AdminRulesPage() {
         keys={['min_deposit', 'signup_bonus']}
       />
       <TeamRewardTiersEditor />
-      </SuperAdminLock>
     </div>
   );
 }

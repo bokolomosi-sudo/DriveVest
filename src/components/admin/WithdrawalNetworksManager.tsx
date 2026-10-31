@@ -10,7 +10,6 @@ import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import { adminDeleteWithdrawalNetwork, adminListWithdrawalNetworks, adminSaveWithdrawalNetwork } from '../../services/wallet';
 import type { WithdrawalNetwork } from '../../types';
-import { SuperAdminLock } from './SuperAdminLock';
 
 /** Réseaux sur lesquels les membres peuvent recevoir leurs retraits. */
 export function WithdrawalNetworksManager() {
@@ -66,7 +65,7 @@ export function WithdrawalNetworksManager() {
   };
 
   return (
-    <SuperAdminLock>
+    <>
       <WalletRulesCard title="Règles du retrait" keys={['min_withdrawal', 'withdrawal_fee_percent']} />
       <div className="mb-4">
         <h2 className="text-xl font-bold text-slate-900">Réseaux de retrait</h2>
@@ -122,6 +121,6 @@ export function WithdrawalNetworksManager() {
           {deleting?.name} ne sera plus proposé aux nouveaux portefeuilles. Les membres déjà configurés sur ce réseau continuent de recevoir leurs retraits dessus.
         </p>
       </Modal>
-    </SuperAdminLock>
+    </>
   );
 }

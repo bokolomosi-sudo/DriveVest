@@ -6,7 +6,6 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
 import { adminUpdateSettings } from '../../services/content';
-import { SuperAdminLock } from './SuperAdminLock';
 
 /** Ce que les membres voient sur la page Service client : nom WhatsApp, numéro, horaires, groupe. */
 export function SupportContactCard() {
@@ -57,7 +56,6 @@ export function SupportContactCard() {
   };
 
   return (
-    <SuperAdminLock>
     <form onSubmit={save} className="mb-6 space-y-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div>
         <h2 className="text-lg font-semibold">Coordonnées du service client</h2>
@@ -82,6 +80,5 @@ export function SupportContactCard() {
         {busy && <Spinner className="h-4 w-4" />} Enregistrer
       </button>
     </form>
-    </SuperAdminLock>
   );
 }

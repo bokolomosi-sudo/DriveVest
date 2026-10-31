@@ -11,7 +11,6 @@ import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import { adminDeleteDepositChannel, adminListDepositChannels, adminSaveDepositChannel, type DepositChannelInput } from '../../services/wallet';
 import type { DepositChannel } from '../../types';
-import { SuperAdminLock } from './SuperAdminLock';
 
 const EMPTY: DepositChannelInput = {
   name: 'Airtel Money',
@@ -81,7 +80,7 @@ export function DepositChannelsManager() {
   };
 
   return (
-    <SuperAdminLock>
+    <>
       <WalletRulesCard title="Règles du dépôt" keys={['min_deposit']} />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -172,6 +171,6 @@ export function DepositChannelsManager() {
       >
         <p className="text-sm">{deleting?.name} · {deleting?.account_number} ne sera plus proposé aux membres. Pour le cacher temporairement, modifiez-le et décochez « Visible ».</p>
       </Modal>
-    </SuperAdminLock>
+    </>
   );
 }

@@ -556,25 +556,36 @@ await as(B, `select save_push_subscription('https://push.example/abc', 'cle', 'a
   ? ok('abonnements push illisibles par les membres')
   : fail('abonnements visibles', '');
 
-console.log('27. Super administrateur');
-await expectError('un client ne nomme pas d\'admin', () => as(B, `select super_admin_set_admin($1, true)`, [B]), /super administrateur/);
+console.log('27. Super administrateur (invisible)');
+await expectError('un client ne nomme pas d\'admin', () => as(B, `select super_admin_set_admin($1, true)`, [B]), /non autorisée/);
 await expectOk('le super admin nomme un administrateur', () => as(ADMIN, `select super_admin_set_admin($1, true)`, [R2]));
 (await notif(R2, 'Vous êtes administrateur')) === 1 ? ok('le nouvel admin est prévenu') : fail('notif admin', 0);
-await expectError('un admin ne nomme pas d\'autre admin', () => as(R2, `select super_admin_set_admin($1, true)`, [B]), /super administrateur/);
+await expectError('un admin ne nomme pas d\'autre admin', () => as(R2, `select super_admin_set_admin($1, true)`, [B]), /non autorisée/);
 await expectError('le rôle du super admin est protégé', () => as(ADMIN, `select super_admin_set_admin($1, false)`, [ADMIN]), /propre rôle/);
-const feeBefore = (await db.query(`select withdrawal_fee_percent from platform_settings where id = 1`)).rows[0].withdrawal_fee_percent;
-await as(R2, `update platform_settings set withdrawal_fee_percent = 1 where id = 1`);
-(await db.query(`select withdrawal_fee_percent from platform_settings where id = 1`)).rows[0].withdrawal_fee_percent === feeBefore
-  ? ok('un admin ne peut pas changer les frais (réservé au super admin)')
-  : fail('frais modifiés par un admin', '');
-await expectError('un admin ne crée pas de compte de dépôt', () => as(R2, `insert into deposit_channels (name, account_number) values ('Faux', '0990000009')`), /row-level security|permission denied/);
-await expectError('un admin ne modifie pas les paliers d\'équipe', () => as(R2, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":99999}]')`), /super administrateur/);
+
+const hidden = await as(R2, `select role from user_roles where user_id = $1`, [ADMIN]);
+!hidden.rows.some((r) => r.role === 'super_admin') ? ok('un admin ne voit pas le rôle super admin') : fail('rôle visible', JSON.stringify(hidden.rows));
+const auditSeen = await as(R2, `select count(*)::int n from audit_logs where entity_type = 'user_roles' or actor_id = $1`, [ADMIN]);
+auditSeen.rows[0].n === 0 ? ok('le journal ne montre ni les rôles ni les actions du super admin') : fail('journal', auditSeen.rows[0].n);
+await expectError('un admin ne crédite pas le compte du super admin', () => as(R2, `select admin_wallet_adjustment($1, 100, 'CDF', 'credit', 'Test sur un compte protégé')`, [ADMIN]), /Action impossible sur ce compte/);
+await expectError('un admin ne bloque pas le compte du super admin', () => as(R2, `select admin_set_user_blocked($1, true, 'Test')`, [ADMIN]), /Action impossible sur ce compte/);
+await expectError('un admin ne réinitialise pas son mot de passe', () => as(R2, `select admin_reset_user_password($1, 'abcdef')`, [ADMIN]), /Action impossible sur ce compte/);
+
 const alertsBefore = await notif(ADMIN, '🚨 Alerte : action d\'un admin à vérifier');
+const actionsBefore = await notif(ADMIN, 'Action d\'un admin');
+await as(R2, `update platform_settings set withdrawal_fee_percent = 7 where id = 1`);
+(await db.query(`select withdrawal_fee_percent from platform_settings where id = 1`)).rows[0].withdrawal_fee_percent == 7
+  ? ok('un admin peut modifier les frais')
+  : fail('frais non modifiés', '');
+(await notif(ADMIN, 'Action d\'un admin')) === actionsBefore + 1 ? ok('super admin prévenu du changement des frais') : fail('alerte frais', '');
+await expectOk('un admin peut ajouter un compte de dépôt', () => as(R2, `insert into deposit_channels (name, account_number, account_name) values ('Orange Money', '0890000009', 'Test')`));
 await as(R2, `select admin_wallet_adjustment($1, 5000, 'CDF', 'credit', 'Crédit sur mon propre compte')`, [R2]);
 const alertRow = (await db.query(`select body from notifications where user_id = $1 and title like '🚨%' order by created_at desc limit 1`, [ADMIN])).rows[0];
-(await notif(ADMIN, '🚨 Alerte : action d\'un admin à vérifier')) === alertsBefore + 1 && /propre compte/.test(alertRow?.body ?? '')
-  ? ok(`super admin alerté : « ${alertRow.body} »`)
-  : fail('alerte super admin', JSON.stringify(alertRow));
+(await notif(ADMIN, '🚨 Alerte : action d\'un admin à vérifier')) === alertsBefore + 2 && /propre compte/.test(alertRow?.body ?? '')
+  ? ok(`super admin alerté (compte de dépôt + crédit sur soi) : « ${alertRow.body} »`)
+  : fail('alerte super admin', JSON.stringify({ alertRow, n: await notif(ADMIN, '🚨 Alerte : action d\'un admin à vérifier'), alertsBefore }));
+await expectOk('un admin peut modifier les paliers d\'équipe', () => as(R2, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount":500},{"invited_count":2,"amount":1000}]')`));
+
 const quietBefore = await db.query(`select count(*)::int n from notifications where user_id = $1`, [ADMIN]);
 await as(ADMIN, `select admin_wallet_adjustment($1, 100, 'CDF', 'credit', 'Action du super admin lui-même')`, [B]);
 (await db.query(`select count(*)::int n from notifications where user_id = $1`, [ADMIN])).rows[0].n === quietBefore.rows[0].n

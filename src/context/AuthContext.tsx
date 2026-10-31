@@ -13,7 +13,7 @@ interface AuthContextValue {
   roles: AppRole[];
   /** Indication d'interface uniquement : les droits réels sont vérifiés par RLS et les fonctions SQL. */
   isAdmin: boolean;
-  /** Super administrateur : nomme les admins et règle les paramètres sensibles (vérifié aussi par la base). */
+  /** Super administrateur : seul à nommer ou retirer les admins (vérifié aussi par la base). */
   isSuperAdmin: boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;

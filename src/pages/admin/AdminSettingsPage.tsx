@@ -9,7 +9,6 @@ import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
 import { adminUpdateSettings } from '../../services/content';
 import type { PlatformSettings } from '../../types';
-import { SuperAdminLock } from '../../components/admin/SuperAdminLock';
 
 const TEXT_KEYS = [
   'default_currency', 'payment_instructions', 'deposit_instructions', 'contact_email', 'contact_phone', 'whatsapp_number',
@@ -110,7 +109,6 @@ export default function AdminSettingsPage() {
     <>
       <PageMeta title="Paramètres — Administration" noindex />
       <PageHeader title="Paramètres de la plateforme" description="Chaque modification est enregistrée dans le journal d'audit." />
-      <SuperAdminLock>
       <form onSubmit={onSubmit} className="space-y-6">
         <Section title="Modules" grid={false}>
           <div className="grid gap-3 md:grid-cols-2">
@@ -173,7 +171,7 @@ export default function AdminSettingsPage() {
         {formError && <Alert tone="danger">{formError}</Alert>}
         <button className="btn-primary" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Enregistrer les paramètres</button>
       </form>
-      </SuperAdminLock>
+
     </>
   );
 }
