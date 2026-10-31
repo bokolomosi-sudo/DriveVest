@@ -99,7 +99,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             <span>
               {result.message}
               {result.ok && <> <Link to="/compte/produits" className="font-semibold underline">Voir</Link></>}
-              {!result.ok && /solde est insuffisant/.test(result.message) && (
+              {!result.ok && /solde est insuffisant|dépôt validé/.test(result.message) && (
                 <> <Link to="/compte/depot" className="font-semibold underline">Faire un dépôt</Link></>
               )}
             </span>

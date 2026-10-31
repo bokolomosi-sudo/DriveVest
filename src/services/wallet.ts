@@ -168,6 +168,13 @@ export async function iHavePurchased(): Promise<boolean> {
   return data === true;
 }
 
+/** Le membre connecté a-t-il au moins un dépôt validé par l'admin ? (condition d'achat et de retrait) */
+export async function iHaveApprovedDeposit(): Promise<boolean> {
+  const { data, error } = await db().rpc('i_have_approved_deposit');
+  if (error) throw error;
+  return data === true;
+}
+
 /** Achat immédiat d'un véhicule : commande créée et réglée avec le solde du portefeuille. */
 export async function buyVehicleWithWallet(vehicleId: string, idempotencyKey: string): Promise<Order> {
   const { data, error } = await db().rpc('buy_vehicle_with_wallet', {

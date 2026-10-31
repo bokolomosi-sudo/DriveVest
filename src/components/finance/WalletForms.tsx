@@ -356,11 +356,12 @@ export function ChangeWithdrawalPasswordForm() {
 // --- Retrait ------------------------------------------------------------------
 
 /** Conditions de retrait, cochées lorsqu'elles sont remplies. */
-export function WithdrawalConditions({ purchased, hasAccount }: { purchased: boolean; hasAccount: boolean }) {
+export function WithdrawalConditions({ purchased, deposited, hasAccount }: { purchased: boolean; deposited: boolean; hasAccount: boolean }) {
   const { settings } = useSettings();
   const minimum = Number(settings?.min_withdrawal ?? 0);
   const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
   const items: { label: string; met?: boolean }[] = [
+    { label: 'Avoir fait au moins un dépôt validé', met: deposited },
     { label: 'Avoir acheté au moins un produit', met: purchased },
     ...(minimum > 0 ? [{ label: `Montant minimum : ${formatPrice(minimum, CURRENCY)}` }] : []),
     { label: 'Mobile Money et mot de passe de retrait configurés', met: hasAccount },
@@ -392,11 +393,13 @@ export function WithdrawalForm({
   account,
   available,
   purchased,
+  deposited,
   onDone,
 }: {
   account: WithdrawalAccount;
   available: number;
   purchased: boolean;
+  deposited: boolean;
   onDone: () => void;
 }) {
   const { settings } = useSettings();
@@ -421,7 +424,8 @@ export function WithdrawalForm({
         : value < minimum
           ? `Le montant minimum de retrait est de ${formatPrice(minimum, CURRENCY)}.`
           : null;
-  const amountValid = purchased && amount !== '' && value > 0 && !liveError;
+  const allowed = purchased && deposited;
+  const amountValid = allowed && amount !== '' && value > 0 && !liveError;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -457,7 +461,12 @@ export function WithdrawalForm({
 
       {step === 'amount' ? (
         <>
-          {!purchased && (
+          {!deposited ? (
+            <Alert tone="warning">
+              Faites au moins un dépôt validé par l&apos;administration pour pouvoir retirer.{' '}
+              <Link to="/compte/depot" className="font-semibold underline">Faire un dépôt</Link>
+            </Alert>
+          ) : !purchased && (
             <Alert tone="warning">
               Achetez au moins un produit pour pouvoir retirer.{' '}
               <Link to="/produits" className="font-semibold underline">Voir les produits</Link>
@@ -471,7 +480,7 @@ export function WithdrawalForm({
               min={0}
               step="1"
               inputMode="numeric"
-              disabled={!purchased}
+              disabled={!allowed}
               placeholder={minimum > 0 ? `Minimum ${formatPrice(minimum, CURRENCY)}` : 'Montant'}
               aria-invalid={Boolean(liveError)}
               className={`input h-14 rounded-2xl ${liveError ? 'border-red-400 focus:border-red-500 focus:ring-red-500/30' : ''}`}

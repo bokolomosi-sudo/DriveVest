@@ -5,7 +5,7 @@ import { ErrorState, LoadingState } from '../../components/ui/Feedback';
 import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import { CURRENCY } from '../../lib/format';
-import { getMyBalances, getMyWithdrawalAccount, iHavePurchased, listMyWalletTransactions } from '../../services/wallet';
+import { getMyBalances, getMyWithdrawalAccount, iHaveApprovedDeposit, iHavePurchased, listMyWalletTransactions } from '../../services/wallet';
 
 export default function WithdrawalPage() {
   const { user } = useAuth();
@@ -13,6 +13,7 @@ export default function WithdrawalPage() {
   const account = useAsync(getMyWithdrawalAccount, []);
   const balances = useAsync(getMyBalances, []);
   const purchased = useAsync(iHavePurchased, []);
+  const deposited = useAsync(iHaveApprovedDeposit, []);
   const history = useAsync(() => listMyWalletTransactions(userId), [userId]);
   const available = balances.data?.find((b) => b.currency === CURRENCY)?.available ?? 0;
 
@@ -21,8 +22,8 @@ export default function WithdrawalPage() {
     void history.reload();
   };
 
-  const loading = account.loading || balances.loading || purchased.loading;
-  const error = account.error ?? balances.error ?? purchased.error;
+  const loading = account.loading || balances.loading || purchased.loading || deposited.loading;
+  const error = account.error ?? balances.error ?? purchased.error ?? deposited.error;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -32,12 +33,12 @@ export default function WithdrawalPage() {
       {loading ? (
         <LoadingState />
       ) : error ? (
-        <ErrorState message={error} onRetry={() => { void account.reload(); void balances.reload(); void purchased.reload(); }} />
+        <ErrorState message={error} onRetry={() => { void account.reload(); void balances.reload(); void purchased.reload(); void deposited.reload(); }} />
       ) : (
         <div className="space-y-5">
-          <WithdrawalConditions purchased={purchased.data === true} hasAccount={Boolean(account.data)} />
+          <WithdrawalConditions purchased={purchased.data === true} deposited={deposited.data === true} hasAccount={Boolean(account.data)} />
           {account.data ? (
-            <WithdrawalForm account={account.data} available={available} purchased={purchased.data === true} onDone={reload} />
+            <WithdrawalForm account={account.data} available={available} purchased={purchased.data === true} deposited={deposited.data === true} onDone={reload} />
           ) : (
             // Premier retrait : configuration du portefeuille de paiement
             <WithdrawalSetup onDone={account.reload} />

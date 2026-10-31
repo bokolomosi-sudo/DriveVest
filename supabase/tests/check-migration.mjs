@@ -53,6 +53,11 @@ async function as(uid, sql, params = []) {
 async function expectOk(name, fn) {
   try { const r = await fn(); ok(name); return r; } catch (e) { fail(name, e.message); }
 }
+// Dépôt validé par l'admin (condition d'achat et de retrait)
+async function approvedDeposit(uid, amount = 1000) {
+  await db.query(`insert into transactions (user_id, type, amount, currency, status, reference, reason, wallet, direction)
+    values ($1, 'deposit', $2, 'CDF', 'confirmed', new_transaction_reference(), 'Dépôt de test validé', true, 'credit')`, [uid, amount]);
+}
 async function expectError(name, fn, pattern) {
   try { await fn(); fail(name, 'aucune erreur levée'); }
   catch (e) { if (!pattern || pattern.test(e.message)) ok(`${name} → « ${e.message} »`); else fail(name, e.message); }
@@ -235,6 +240,8 @@ await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('$
 await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('${B}', 'b@test.local', '{"referral_code":"${await codeOf(R3)}"}')`);
 await as(ADMIN, `update platform_settings set referral_commission_percent = 25, referral_level2_percent = 5, referral_level3_percent = 1, referral_on_orders = true`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Approvisionnement de test pour le parrainage')`, [B]);
+await expectError('achat refusé sans dépôt validé', () => as(B, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]), /dépôt validé/);
+await approvedDeposit(B);
 // Achats simulés : R3 (niveau 1) et R1 (niveau 3) ont acheté, R2 (niveau 2) non
 const simulated = await db.query(`insert into orders (user_id, status, total_amount, currency, idempotency_key)
   values ('${R3}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()), ('${R1}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()) returning id`);
@@ -304,6 +311,7 @@ await as(ADMIN, `select admin_set_team_reward_tiers('[{"invited_count":1,"amount
   ? ok('palier atteint mais aucun achat personnel : pas de récompense')
   : fail('récompense sans achat', JSON.stringify(await grantsOf(R3)));
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test achat du parrain')`, [R3]);
+await approvedDeposit(R3);
 const r3Before = await bal(R3, 'CDF');
 await as(R3, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]);
 const r3After = await bal(R3, 'CDF');
@@ -318,6 +326,7 @@ await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('$
 const progress1 = await as(R3, `select invested_invitees from my_team_rewards() limit 1`);
 progress1.rows[0].invested_invitees === 1 ? ok('un inscrit sans achat ne compte pas') : fail('progression', JSON.stringify(progress1.rows));
 await as(ADMIN, `select admin_wallet_adjustment($1, 20000, 'CDF', 'credit', 'Test récompense d''équipe')`, [C]);
+await approvedDeposit(C);
 await as(C, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [vehicleId]);
 const g2 = await grantsOf(R3);
 g2.length === 2 && Number(g2[1].amount) === 1000 ? ok('2e invité qui achète : palier de 1 000 FC versé automatiquement') : fail('palier auto', JSON.stringify(g2));
@@ -424,6 +433,7 @@ console.log('22. Cycle de vie des produits');
 const D = '00000000-0000-0000-0000-0000000000d1';
 await db.exec(`insert into auth.users (id, email) values ('${D}', 'd@test.local')`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 5000, 'CDF', 'credit', 'Test cycle de vie des produits')`, [D]);
+await approvedDeposit(D);
 const lifeVehicles = [];
 for (let i = 1; i <= 7; i++) {
   const r = await as(ADMIN, `insert into vehicles (brand, model, price, duration_days, daily_revenue_percent, status, condition, category_id)
@@ -484,6 +494,25 @@ await expectError('nouveau mot de passe de moins de 4 caractères refusé', () =
   && (await as(D, `select change_withdrawal_password('2222', '3333') v`)).rows[0].v === true
   ? ok('mot de passe de retrait changé avec l\'ancien')
   : fail('changement mot de passe', '');
+
+console.log('24. Dépôt validé obligatoire');
+const E = '00000000-0000-0000-0000-0000000000e2';
+await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('${E}', 'e@test.local', '{"referral_code":"${await codeOf(D)}"}')`);
+(await as(E, `select i_have_approved_deposit() v`)).rows[0].v === false ? ok('pas de dépôt validé détecté') : fail('i_have_approved_deposit', 'true');
+// Achat simulé pour isoler la condition de dépôt sur le retrait
+await db.exec(`insert into orders (user_id, status, total_amount, currency, idempotency_key) values ('${E}', 'payment_confirmed', 0, 'CDF', gen_random_uuid())`);
+await as(E, `select set_withdrawal_account('Airtel Money', 'Membre E', '243974444444', '1234')`);
+await as(ADMIN, `select admin_wallet_adjustment($1, 10000, 'CDF', 'credit', 'Test retrait sans dépôt')`, [E]);
+await expectError('retrait refusé sans dépôt validé', () => as(E, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`), /dépôt validé/);
+
+const dComm = await bal(D);
+await db.query(`select grant_referral_commission($1, 1000, 'CDF', 'order', gen_random_uuid())`, [E]);
+(await bal(D)) === dComm ? ok('filleul sans dépôt validé : aucune commission pour le parrain') : fail('commission sans dépôt', (await bal(D)) - dComm);
+await approvedDeposit(E);
+(await as(E, `select i_have_approved_deposit() v`)).rows[0].v === true ? ok('dépôt validé détecté') : fail('i_have_approved_deposit', 'false');
+await db.query(`select grant_referral_commission($1, 1000, 'CDF', 'order', gen_random_uuid())`, [E]);
+(await bal(D)) - dComm === 250 ? ok('filleul avec dépôt validé : commission de 25 % versée au parrain qui a acheté') : fail('commission avec dépôt', (await bal(D)) - dComm);
+await expectOk('retrait accepté avec achat et dépôt validé', () => as(E, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`));
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
