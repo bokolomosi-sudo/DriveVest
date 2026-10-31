@@ -24,8 +24,3 @@ export async function listMyProductRevenues(): Promise<MyProductRevenue[]> {
   if (error) throw error;
   return ((data ?? []) as MyProductRevenue[]).map((r) => ({ ...r, amount: Number(r.amount) }));
 }
-
-/** Date du jour à Kinshasa, au format AAAA-MM-JJ. */
-export function todayInKinshasa(): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Kinshasa' }).format(new Date());
-}

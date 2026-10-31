@@ -1,3 +1,5 @@
+import { getUserTimeZone } from './timezone';
+
 export const CURRENCY = 'CDF';
 
 export function formatPrice(amount: number | null | undefined, currency: string): string {
@@ -18,9 +20,11 @@ export function formatPrice(amount: number | null | undefined, currency: string)
 
 export function formatDate(value: string | null | undefined, withTime = false): string {
   if (!value) return '—';
+  // Affichée à l'heure de la province du membre (RDC : UTC+1 à l'ouest, UTC+2 à l'est)
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'medium',
     ...(withTime ? { timeStyle: 'short' } : {}),
+    timeZone: getUserTimeZone(),
   }).format(new Date(value));
 }
 

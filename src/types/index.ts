@@ -512,6 +512,8 @@ export interface MyProductRevenue {
   order_id: string;
   vehicle_label: string;
   revenue_date: string;
+  /** Heure exacte du versement (classement par jour selon le fuseau du membre). */
+  revenue_at: string;
   amount: number;
   created_at: string;
 }

@@ -111,7 +111,7 @@ function TeamRewards({ rewards }: { rewards: TeamReward[] }) {
         <h2 className="text-lg font-semibold text-slate-900">Récompenses d'équipe</h2>
       </div>
       <p className="mt-1 text-sm text-slate-500">
-        Seuls vos invités directs ayant déjà acheté au moins un produit comptent. La récompense est versée automatiquement sur votre compte Drivest.
+        Seuls vos invités directs ayant déjà acheté au moins un produit comptent, et vous devez avoir acheté un produit vous-même. La récompense est versée automatiquement sur votre compte Drivest.
       </p>
       <ul className="mt-5 space-y-5">
         {rewards.map((r) => {
@@ -164,7 +164,7 @@ export default function ReferralPage() {
     Number(settings?.referral_level2_percent ?? 0),
     Number(settings?.referral_level3_percent ?? 0),
   ];
-  const bases = [settings?.referral_on_orders && 'achats de véhicules payés'].filter(Boolean);
+  const bases = [settings?.referral_on_orders && 'achats de produits'].filter(Boolean);
   const totalByCurrency = new Map<string, number>();
   for (const c of commissions.data ?? []) {
     if (!c.reversed_at) totalByCurrency.set(c.currency, (totalByCurrency.get(c.currency) ?? 0) + Number(c.amount));
@@ -199,7 +199,7 @@ export default function ReferralPage() {
           <p className="font-semibold">Règles de rémunération</p>
           {rates.some((r) => r > 0) && bases.length > 0 ? (
             <div className="mt-2 space-y-2 text-slate-600">
-              <p>Sur les {bases.join(' et les ')} confirmés de votre équipe, vous recevez :</p>
+              <p>Sur les {bases.join(' et les ')} de votre équipe, vous recevez :</p>
               <ul className="grid grid-cols-3 gap-2 text-center">
                 {['Vos invités', 'Leurs invités', 'Niveau 3'].map((label, i) => (
                   <li key={label} className="rounded-lg bg-accent-50 p-2">
@@ -208,7 +208,11 @@ export default function ReferralPage() {
                   </li>
                 ))}
               </ul>
-              <p className="text-xs">L'inscription seule n'est pas rémunérée.</p>
+              <ul className="list-disc space-y-1 pl-4 text-xs">
+                <li>Vous devez avoir acheté vous-même au moins un produit pour recevoir une commission.</li>
+                <li>La commission est versée seulement si votre invité a fait un dépôt validé.</li>
+                <li>L&apos;inscription seule n&apos;est pas rémunérée.</li>
+              </ul>
             </div>
           ) : (
             <p className="mt-2 text-slate-600">Aucune commission n'est actuellement versée au titre du parrainage.</p>

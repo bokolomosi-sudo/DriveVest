@@ -1,3 +1,4 @@
+import { formatDate } from '../lib/format';
 import { db } from '../lib/supabase';
 
 export interface AdminGift {
@@ -83,7 +84,7 @@ export function giftShareText(gift: Pick<AdminGift, 'code' | 'title' | 'amount' 
     'Ouvrez Drivest > Bonus surprise et entrez le code.',
   ];
   if (gift.expires_at) {
-    lines.push(`Valable jusqu'au ${new Date(gift.expires_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}.`);
+    lines.push(`Valable jusqu'au ${formatDate(gift.expires_at, true)}.`);
   }
   return lines.join('\n');
 }

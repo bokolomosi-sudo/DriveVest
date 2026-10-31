@@ -1,4 +1,5 @@
 import { db } from '../lib/supabase';
+import { startOfToday } from '../lib/timezone';
 import type {
   DepositChannel,
   WithdrawalNetwork, Order, PlatformSettings, Transaction, TransactionStatus, WalletBalance } from '../types';
@@ -34,8 +35,8 @@ export async function getMyBalances(): Promise<WalletBalance[]> {
 
 /** Gains crédités aujourd'hui (commissions, revenus distribués, restitutions). */
 export async function getTodayGains(userId: string): Promise<number> {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  // Minuit selon le fuseau de la province du membre (même définition que « Mes produits »)
+  const startOfDay = startOfToday();
   const { data, error } = await db()
     .from('transactions')
     .select('amount')

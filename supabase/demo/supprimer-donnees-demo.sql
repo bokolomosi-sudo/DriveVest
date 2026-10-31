@@ -10,6 +10,9 @@ create temporary table demo_users on commit drop as
   select id from public.profiles where phone like '2439900010%';
 
 delete from public.team_reward_grants where user_id in (select id from demo_users);
+-- Revenus automatiques et bonus : ils pointent vers des transactions, à retirer avant elles
+delete from public.product_daily_credits where user_id in (select id from demo_users);
+delete from public.gift_claims where user_id in (select id from demo_users);
 delete from public.product_revenue_payouts where user_id in (select id from demo_users);
 delete from public.referral_commissions
   where referrer_id in (select id from demo_users) or referred_id in (select id from demo_users);
@@ -17,6 +20,8 @@ delete from public.referral_commissions
 delete from public.transactions where user_id in (select id from demo_users) and related_transaction_id is not null;
 delete from public.transactions where user_id in (select id from demo_users);
 delete from public.payments where user_id in (select id from demo_users);
+delete from public.order_status_history where order_id in (select id from public.orders where user_id in (select id from demo_users));
+delete from public.order_items where order_id in (select id from public.orders where user_id in (select id from demo_users));
 delete from public.orders where user_id in (select id from demo_users);
 -- Profil, rôles, notifications et portefeuille de retrait suivent le compte
 delete from auth.users where id in (select id from demo_users);

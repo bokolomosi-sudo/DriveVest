@@ -9,7 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
 import { listMyOrders } from '../../services/orders';
-import { listMyProductRevenues, todayInKinshasa } from '../../services/revenue';
+import { dayKey, todayKey } from '../../lib/timezone';
+import { listMyProductRevenues } from '../../services/revenue';
 import { vehicleImageUrl } from '../../services/vehicles';
 
 /** Produits achetés par le client. */
@@ -17,9 +18,10 @@ export default function MyProductsPage() {
   const { user } = useAuth();
   const { data, loading, error, reload } = useAsync(() => listMyOrders(user!.id), [user!.id]);
   const revenues = useAsync(listMyProductRevenues, []);
-  const today = todayInKinshasa();
+  // « Aujourd'hui » selon le fuseau de la province du membre
+  const today = todayKey();
   const revenueOf = (orderId: string) => (revenues.data ?? []).filter((r) => r.order_id === orderId);
-  const todayTotal = (revenues.data ?? []).filter((r) => r.revenue_date === today).reduce((s, r) => s + r.amount, 0);
+  const todayTotal = (revenues.data ?? []).filter((r) => dayKey(r.revenue_at) === today).reduce((s, r) => s + r.amount, 0);
   const allTotal = (revenues.data ?? []).reduce((s, r) => s + r.amount, 0);
 
   return (
@@ -96,10 +98,10 @@ export default function MyProductsPage() {
           <p className="mb-3 text-xs text-slate-500">Revenus quotidiens versés automatiquement à votre portefeuille chaque jour pendant toute la durée de vos produits.</p>
           <ul className="divide-y divide-slate-100 rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
             {revenues.data!.map((r, i) => (
-              <li key={`${r.order_id}-${r.revenue_date}-${i}`} className="flex items-center justify-between gap-3 p-3 text-sm">
+              <li key={`${r.order_id}-${r.revenue_at}-${i}`} className="flex items-center justify-between gap-3 p-3 text-sm">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-slate-900">{r.vehicle_label}</p>
-                  <p className="text-xs text-slate-500">Revenu du {formatDate(r.revenue_date)}</p>
+                  <p className="text-xs text-slate-500">Revenu du {formatDate(r.revenue_at)}</p>
                 </div>
                 <p className="shrink-0 font-bold text-green-700">+{formatPrice(r.amount, CURRENCY)}</p>
               </li>
