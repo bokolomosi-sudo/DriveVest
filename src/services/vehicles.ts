@@ -143,12 +143,38 @@ export async function adminSetVehicleStatus(id: string, status: PublicationStatu
   if (error) throw error;
 }
 
+// Les photos sont réduites avant l'envoi : une photo de téléphone (3-5 Mo) devient ~150 Ko,
+// ce qui accélère fortement l'affichage des produits sur les connexions mobiles.
+const MAX_IMAGE_SIDE = 1280;
+const IMAGE_QUALITY = 0.8;
+
+async function compressImage(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', IMAGE_QUALITY));
+    // Navigateur sans WebP (il renvoie du PNG) ou résultat plus lourd : on garde l'original
+    return blob && blob.type === 'image/webp' && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
 export async function adminUploadVehicleImage(vehicleId: string, file: File, sortOrder: number, alt: string): Promise<VehicleImage> {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) throw new Error('Format accepté : JPEG, PNG ou WebP.');
   if (file.size > MAX_IMAGE_BYTES) throw new Error('Image trop lourde (5 Mo maximum).');
-  const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
+  const image = await compressImage(file);
+  const ext = image.type.split('/')[1].replace('jpeg', 'jpg');
   const path = `${vehicleId}/${crypto.randomUUID()}.${ext}`;
-  const upload = await db().storage.from(VEHICLE_IMAGES_BUCKET).upload(path, file, { contentType: file.type });
+  const upload = await db().storage.from(VEHICLE_IMAGES_BUCKET).upload(path, image, {
+    contentType: image.type,
+    cacheControl: '31536000',
+  });
   if (upload.error) throw upload.error;
   const { data, error } = await db()
     .from('vehicle_images')

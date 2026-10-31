@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { WifiOff } from 'lucide-react';
+import { BACK_ONLINE_EVENT } from '../lib/networkActivity';
 
 interface State {
   failed: boolean;
@@ -11,6 +12,19 @@ export class PageErrorBoundary extends Component<{ children: ReactNode }, State>
 
   static getDerivedStateFromError(): State {
     return { failed: true };
+  }
+
+  // Connexion revenue après un échec de chargement : on recharge la page automatiquement
+  private onBackOnline = () => {
+    if (this.state.failed) window.location.reload();
+  };
+
+  componentDidMount() {
+    window.addEventListener(BACK_ONLINE_EVENT, this.onBackOnline);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(BACK_ONLINE_EVENT, this.onBackOnline);
   }
 
   render() {

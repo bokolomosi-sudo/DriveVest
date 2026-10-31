@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type DependencyList } from 'react';
 import { toErrorMessage } from '../lib/errors';
+import { BACK_ONLINE_EVENT } from '../lib/networkActivity';
 
 /** Charge une donnée asynchrone avec états de chargement / erreur et rechargement. */
 export function useAsync<T>(fn: () => Promise<T>, deps: DependencyList = []) {
@@ -28,6 +29,17 @@ export function useAsync<T>(fn: () => Promise<T>, deps: DependencyList = []) {
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+
+  // Connexion revenue : une donnée qui n'avait pas pu se charger est rechargée automatiquement
+  const errorRef = useRef(error);
+  errorRef.current = error;
+  useEffect(() => {
+    const onBackOnline = () => {
+      if (errorRef.current) void reload();
+    };
+    window.addEventListener(BACK_ONLINE_EVENT, onBackOnline);
+    return () => window.removeEventListener(BACK_ONLINE_EVENT, onBackOnline);
+  }, [reload]);
 
   return { data, error, loading, reload, setData };
 }

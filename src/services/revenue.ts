@@ -20,7 +20,6 @@ export async function adminListDailyCredits(): Promise<ProductDailyCredit[]> {
 }
 
 export async function listMyProductRevenues(): Promise<MyProductRevenue[]> {
-  await creditDueProductRevenues().catch(() => undefined);
   const { data, error } = await db().rpc('my_product_revenues');
   if (error) throw error;
   return ((data ?? []) as MyProductRevenue[]).map((r) => ({ ...r, amount: Number(r.amount) }));
