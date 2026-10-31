@@ -14,6 +14,7 @@ import { CURRENCY, formatDate, formatPrice } from '../../lib/format';
 import { transactionStatus, type Tone } from '../../lib/labels';
 import { formatLocalPhone, parseLocalPhone } from '../../lib/phoneAuth';
 import {
+  changeWithdrawalPassword,
   listDepositChannels,
   listWithdrawalNetworks,
   requestDeposit,
@@ -302,6 +303,53 @@ export function WithdrawalAccountCard({ account }: { account: WithdrawalAccount 
         <div className="flex justify-between gap-3"><dt className="text-slate-500">Mot de passe de retrait</dt><dd className="font-semibold">Configuré</dd></div>
       </dl>
     </div>
+  );
+}
+
+export function ChangeWithdrawalPasswordForm() {
+  const { notify } = useToast();
+  const [oldPassword, setOldPassword] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError(null);
+    if (!oldPassword) return setError('Indiquez votre ancien mot de passe de retrait.');
+    if (password.length < 4) return setError('Le nouveau mot de passe de retrait doit contenir au moins 4 caractères.');
+    if (password !== confirm) return setError('Les nouveaux mots de passe ne correspondent pas.');
+    setBusy(true);
+    try {
+      await changeWithdrawalPassword(oldPassword, password);
+      setOldPassword('');
+      setPassword('');
+      setConfirm('');
+      notify('success', 'Mot de passe de retrait modifié.');
+    } catch (err) {
+      setError(toErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="card space-y-4 p-5">
+      <h2 className="text-lg font-semibold">Changer mon mot de passe de retrait</h2>
+      <Field label="Ancien mot de passe de retrait" htmlFor="cw-old" required>
+        <PasswordField id="cw-old" value={oldPassword} onChange={setOldPassword} placeholder="Ancien mot de passe" autoComplete="current-password" />
+      </Field>
+      <Field label="Nouveau mot de passe de retrait" htmlFor="cw-new" required hint="4 caractères minimum.">
+        <PasswordField id="cw-new" value={password} onChange={setPassword} placeholder="Nouveau mot de passe" autoComplete="new-password" />
+      </Field>
+      <Field label="Confirmer le nouveau mot de passe" htmlFor="cw-confirm" required>
+        <PasswordField id="cw-confirm" value={confirm} onChange={setConfirm} placeholder="Confirmez le nouveau mot de passe" autoComplete="new-password" />
+      </Field>
+      {error && <Alert tone="danger">{error}</Alert>}
+      <button className="btn-primary w-full" disabled={busy}>{busy && <Spinner className="h-4 w-4" />} Changer le mot de passe</button>
+    </form>
   );
 }
 

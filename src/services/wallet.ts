@@ -138,6 +138,16 @@ export async function setWithdrawalAccount(params: { network: string; holderName
   if (error) throw error;
 }
 
+/** Change le mot de passe de retrait ; l'ancien est exigé. */
+export async function changeWithdrawalPassword(oldPassword: string, newPassword: string): Promise<void> {
+  const { data, error } = await db().rpc('change_withdrawal_password', {
+    p_old_password: oldPassword,
+    p_new_password: newPassword,
+  });
+  if (error) throw error;
+  if (data !== true) throw new Error('Ancien mot de passe de retrait incorrect.');
+}
+
 /** Retrait vers le réseau du membre, protégé par le mot de passe de retrait. */
 export async function requestWithdrawal(params: { amount: number; password: string; idempotencyKey: string }): Promise<Transaction> {
   const { data, error } = await db().rpc('request_withdrawal_with_password', {

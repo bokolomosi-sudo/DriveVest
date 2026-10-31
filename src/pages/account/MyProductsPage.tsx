@@ -54,6 +54,9 @@ export default function MyProductsPage() {
             const item = o.items?.[0];
             const cover = item?.vehicle?.images?.slice().sort((a, b) => a.sort_order - b.sort_order)[0];
             const name = item?.vehicle ? `${item.vehicle.brand} ${item.vehicle.model}` : item?.vehicle_label ?? o.order_number;
+            // Durée figée à l'achat ; les revenus partent de l'activation (paiement)
+            const duration = item?.duration_days ?? item?.vehicle?.duration_days ?? null;
+            const start = o.activated_at ?? o.created_at;
             return (
               <li key={o.id}>
                 <Link to={`/compte/commandes/${o.id}`} className="flex gap-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-100 hover:bg-slate-50">
@@ -67,11 +70,11 @@ export default function MyProductsPage() {
                     </div>
                     <p className="mt-1 text-lg font-extrabold text-red-500">{formatPrice(Number(o.total_amount), o.currency)}</p>
                     <p className="text-xs text-slate-500">
-                      {item?.vehicle?.duration_days ? `Durée : ${item.vehicle.duration_days} jours · ` : ''}Acheté le {formatDate(o.created_at)}
+                      {duration ? `Durée : ${duration} jours · ` : ''}Acheté le {formatDate(o.created_at)}
                     </p>
-                    {item?.vehicle?.duration_days && (
+                    {duration && (
                       <p className="text-xs font-medium text-slate-700">
-                        Expire le {formatDate(new Date(new Date(o.created_at).getTime() + item.vehicle.duration_days * 86400000).toISOString())}
+                        {o.status === 'delivered' ? 'Terminé le' : 'Expire le'} {formatDate(new Date(new Date(start).getTime() + duration * 86400000).toISOString())}
                       </p>
                     )}
                     {revenueOf(o.id).length > 0 && (

@@ -174,6 +174,8 @@ export interface OrderItem {
   quantity: number;
   daily_revenue_percent?: number | null;
   daily_revenue_amount?: number | null;
+  /** Durée figée à l'achat (jours). */
+  duration_days?: number | null;
   vehicle?: (Pick<Vehicle, 'id' | 'brand' | 'model' | 'duration_days'> & { images?: VehicleImage[] }) | null;
 }
 

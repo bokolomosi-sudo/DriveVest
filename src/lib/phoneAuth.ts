@@ -13,22 +13,39 @@ export const MIN_PASSWORD_LENGTH = 6;
 /** Indicatif de la RDC, seul pays accepté. */
 export const DEFAULT_COUNTRY_CODE = '243';
 
-/** Numéro international sans « + » (ex. 243812345678), ou null s'il est invalide. */
+/**
+ * Numéro international sans « + » (ex. 243812345678), ou null s'il est invalide.
+ * Un même numéro donne toujours le même résultat, quelle que soit la façon de le saisir
+ * (0971234567, 971234567, +243971234567, 002430971234567…) : un numéro = un compte.
+ */
 export function normalizePhone(countryCode: string, localNumber: string): string | null {
   let digits = localNumber.replace(/\D/g, '');
-  if (localNumber.trim().startsWith('+')) {
-    // Numéro saisi au format international : on le prend tel quel
-    return /^\d{8,15}$/.test(digits) ? digits : null;
+  const international = localNumber.trim().startsWith('+') || digits.startsWith('00');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (international || (digits.startsWith(countryCode) && digits.length > countryCode.length + 7)) {
+    // L'indicatif a été tapé : on le retire
+    if (!digits.startsWith(countryCode)) return null;
+    digits = digits.slice(countryCode.length);
   }
+  digits = digits.replace(/^0+/, '');
+  return /^\d{9}$/.test(digits) ? countryCode + digits : null;
+}
+
+/**
+ * Connexion : format strict d'abord, sinon ancienne normalisation (plus permissive)
+ * pour que les comptes créés avant le format strict puissent toujours se connecter.
+ */
+export function normalizeLoginPhone(countryCode: string, localNumber: string): string | null {
+  const strict = normalizePhone(countryCode, localNumber);
+  if (strict) return strict;
+  let digits = localNumber.replace(/\D/g, '');
+  if (localNumber.trim().startsWith('+')) return /^\d{8,15}$/.test(digits) ? digits : null;
   if (digits.startsWith('00')) {
     digits = digits.slice(2);
     return /^\d{8,15}$/.test(digits) ? digits : null;
   }
   digits = digits.replace(/^0+/, '');
-  if (digits.startsWith(countryCode) && digits.length > countryCode.length + 7) {
-    // L'indicatif a déjà été tapé dans le numéro
-    digits = digits.slice(countryCode.length);
-  }
+  if (digits.startsWith(countryCode) && digits.length > countryCode.length + 7) digits = digits.slice(countryCode.length);
   const full = countryCode + digits;
   return digits.length >= 6 && /^\d{8,15}$/.test(full) ? full : null;
 }

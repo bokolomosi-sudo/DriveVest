@@ -11,7 +11,7 @@ const db = new PGlite();
 const STUBS = `
 create role anon nologin; create role authenticated nologin; create role supabase_auth_admin nologin;
 create schema auth; create schema storage;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}',
+create table auth.users (id uuid primary key, email text, phone text unique, raw_user_meta_data jsonb default '{}',
   encrypted_password text, updated_at timestamptz);
 create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid);
 create table auth.refresh_tokens (id bigserial primary key, user_id text);
@@ -108,7 +108,7 @@ const o1 = await as(CLIENT, `select * from create_order($1, $2, 'note', 'Kinshas
 const o2 = await as(CLIENT, `select * from create_order($1, $2)`, [vehicleId, key]);
 o1.rows[0].id === o2.rows[0].id ? ok(`double soumission → même commande ${o1.rows[0].order_number}`) : fail('idempotence', 'deux commandes');
 const orderId = o1.rows[0].id;
-await expectError('deuxième commande active sur le même véhicule refusée', () => as(CLIENT, `select create_order($1, gen_random_uuid())`, [vehicleId]), /déjà une commande/);
+await expectError('deuxième commande active sur le même véhicule refusée', () => as(CLIENT, `select create_order($1, gen_random_uuid())`, [vehicleId]), /déjà ce produit en cours/);
 const otherSee = await as(OTHER, `select id from orders`);
 otherSee.rows.length === 0 ? ok("un client ne voit pas les commandes d'un autre") : fail('RLS orders', 'visible');
 await expectError('client ne peut pas modifier le statut directement', () => as(CLIENT, `update orders set status = 'delivered' where id = $1`, [orderId]), /permission denied/);
@@ -419,6 +419,71 @@ await as(ADMIN, `delete from vehicles where id = $1`, [newVeh]);
 const checkGone = (await db.query(`select count(*)::int as n from vehicles where id = '${newVeh}'`)).rows[0].n;
 checkGone === 0 ? ok('l\'admin supprime un produit sans commande') : fail('admin delete', checkGone);
 await expectError('impossible de supprimer un produit avec commande', () => as(ADMIN, `delete from vehicles where id = $1`, [vehicleId]), /foreign key|violates/);
+
+console.log('22. Cycle de vie des produits');
+const D = '00000000-0000-0000-0000-0000000000d1';
+await db.exec(`insert into auth.users (id, email) values ('${D}', 'd@test.local')`);
+await as(ADMIN, `select admin_wallet_adjustment($1, 5000, 'CDF', 'credit', 'Test cycle de vie des produits')`, [D]);
+const lifeVehicles = [];
+for (let i = 1; i <= 7; i++) {
+  const r = await as(ADMIN, `insert into vehicles (brand, model, price, duration_days, daily_revenue_percent, status, condition, category_id)
+    select 'Cycle', 'P${i}', 100, 2, 10, 'published', 'used', id from vehicle_categories limit 1 returning id`);
+  lifeVehicles.push(r.rows[0].id);
+}
+for (let i = 0; i < 6; i++) await as(D, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [lifeVehicles[i]]);
+(await db.query(`select active_product_count($1) n`, [D])).rows[0].n === 6 ? ok('6 produits actifs achetés') : fail('6 produits', '');
+await expectError('7e produit actif refusé', () => as(D, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [lifeVehicles[6]]), /6 produits actifs/);
+await expectError('même produit refusé tant qu\'il est en cours', () => as(D, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [lifeVehicles[0]]), /déjà ce produit en cours/);
+
+const orderOf = async (veh) => (await db.query(`select o.id, o.status, i.duration_days from orders o join order_items i on i.order_id = o.id
+  where o.user_id = $1 and i.vehicle_id = $2 order by o.created_at desc limit 1`, [D, veh])).rows[0];
+await as(ADMIN, `update vehicles set duration_days = 10 where id = $1`, [lifeVehicles[0]]);
+(await orderOf(lifeVehicles[0])).duration_days === 2 ? ok('durée figée à l\'achat : le changement admin ne touche pas les produits achetés') : fail('durée figée', JSON.stringify(await orderOf(lifeVehicles[0])));
+
+const lo1 = await orderOf(lifeVehicles[0]);
+await db.query(`update orders set activated_at = now() - interval '49 hours' where id = $1`, [lo1.id]);
+const dBefore = await bal(D);
+await db.query(`select process_due_product_revenues()`);
+(await bal(D)) - dBefore === 20 && (await orderOf(lifeVehicles[0])).status === 'delivered'
+  ? ok('versement serveur sans connexion : 2 jours × 10 FC, produit terminé')
+  : fail('fin de produit', JSON.stringify({ diff: (await bal(D)) - dBefore, order: await orderOf(lifeVehicles[0]) }));
+await expectOk('produit terminé : rachat possible', () => as(D, `select * from buy_vehicle_with_wallet($1, gen_random_uuid())`, [lifeVehicles[0]]));
+(await orderOf(lifeVehicles[0])).duration_days === 10 ? ok('le rachat prend la nouvelle durée (10 jours)') : fail('nouvelle durée', JSON.stringify(await orderOf(lifeVehicles[0])));
+
+const lo2 = await orderOf(lifeVehicles[1]);
+await db.query(`update orders set activated_at = now() - interval '25 hours' where id = $1`, [lo2.id]);
+await db.exec(`update profiles set is_blocked = true, blocked_reason = 'Test' where id = '${D}'`);
+const dBlocked = await bal(D);
+await db.query(`select process_due_product_revenues()`);
+await db.exec(`update profiles set is_blocked = false, blocked_reason = null where id = '${D}'`);
+await db.query(`select process_due_product_revenues()`);
+const skippedRows = (await db.query(`select count(*)::int n from product_daily_credits where order_id = $1 and skipped`, [lo2.id])).rows[0].n;
+(await bal(D)) === dBlocked && skippedRows === 1
+  ? ok('compte bloqué : aucun revenu, jour perdu même après déblocage')
+  : fail('compte bloqué', JSON.stringify({ diff: (await bal(D)) - dBlocked, skippedRows }));
+(await as(D, `select count(*)::int n from my_product_revenues() where order_id = $1`, [lo2.id])).rows[0].n === 0
+  ? ok('jour non versé absent de l\'historique du membre')
+  : fail('historique', 'jour non versé visible');
+
+// Le numéro de retrait de R1 peut servir à un autre compte
+await expectOk('numéro de retrait déjà utilisé par un autre compte accepté', () => as(D, `select set_withdrawal_account('Airtel Money', 'Membre D', '243971111111', '1111')`));
+
+console.log('23. Un numéro de téléphone = un seul compte');
+await db.exec(`insert into auth.users (id, email, phone) values ('00000000-0000-0000-0000-0000000000a1', null, '243975550001')`);
+await expectError('même numéro pour un 2e compte refusé', () => db.exec(`insert into auth.users (id, email, phone) values ('00000000-0000-0000-0000-0000000000a2', null, '243975550001')`), /unique|duplicate/);
+await expectError('même numéro écrit autrement (+2430…) refusé', () => db.exec(`insert into auth.users (id, email, phone) values ('00000000-0000-0000-0000-0000000000a3', null, '2430975550001')`), /Numéro de téléphone invalide/);
+await expectError('même numéro dans le profil d\'un autre compte refusé', () => db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000a4', 'x@test.local', '{"phone":"243971110002"}')`), /unique|duplicate/);
+(await as(D, `select change_withdrawal_password('9999', '2222') v`)).rows[0].v === false
+  ? ok('changement refusé avec un mauvais ancien mot de passe')
+  : fail('ancien mot de passe', 'accepté');
+(await db.query(`select failed_attempts from withdrawal_accounts where user_id = $1`, [D])).rows[0].failed_attempts === 1
+  ? ok('l\'essai incorrect est compté')
+  : fail('compteur', '');
+await expectError('nouveau mot de passe de moins de 4 caractères refusé', () => as(D, `select change_withdrawal_password('1111', '12')`), /4 caractères/);
+(await as(D, `select change_withdrawal_password('1111', '2222') v`)).rows[0].v === true
+  && (await as(D, `select change_withdrawal_password('2222', '3333') v`)).rows[0].v === true
+  ? ok('mot de passe de retrait changé avec l\'ancien')
+  : fail('changement mot de passe', '');
 
 console.log(failures === 0 ? '\nTOUS LES TESTS SONT PASSÉS' : `\n${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -5,7 +5,7 @@ import { Alert, Spinner } from '../../components/ui/Feedback';
 import { PasswordField, PhoneField } from '../../components/ui/PhoneField';
 import { useAuth } from '../../context/AuthContext';
 import { toErrorMessage } from '../../lib/errors';
-import { DEFAULT_COUNTRY_CODE, normalizePhone } from '../../lib/phoneAuth';
+import { DEFAULT_COUNTRY_CODE, normalizeLoginPhone } from '../../lib/phoneAuth';
 import { setRememberMe } from '../../lib/rememberMe';
 import { signIn } from '../../services/account';
 import { AuthShell } from './AuthShell';
@@ -31,7 +31,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (busy) return;
     setError(null);
-    const phone = normalizePhone(DEFAULT_COUNTRY_CODE, number);
+    const phone = normalizeLoginPhone(DEFAULT_COUNTRY_CODE, number);
     if (!phone) return setError('Numéro de téléphone invalide.');
     if (!password) return setError('Saisissez votre mot de passe.');
     setBusy(true);

@@ -1,4 +1,4 @@
-import { WithdrawalAccountCard, WithdrawalSetup } from '../../components/finance/WalletForms';
+import { ChangeWithdrawalPasswordForm, WithdrawalAccountCard, WithdrawalSetup } from '../../components/finance/WalletForms';
 import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { Alert, ErrorState, LoadingState } from '../../components/ui/Feedback';
@@ -20,7 +20,8 @@ export default function WalletPage() {
       ) : account.data ? (
         <div className="space-y-4">
           <WithdrawalAccountCard account={account.data} />
-          <Alert tone="info">Pour modifier ces informations, contactez le service client.</Alert>
+          <Alert tone="info">Pour modifier le réseau, le titulaire ou le numéro, contactez le service client.</Alert>
+          <ChangeWithdrawalPasswordForm />
         </div>
       ) : (
         <WithdrawalSetup onDone={account.reload} />

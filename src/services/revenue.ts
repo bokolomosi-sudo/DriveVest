@@ -12,6 +12,7 @@ export async function adminListDailyCredits(): Promise<ProductDailyCredit[]> {
   const { data, error } = await db()
     .from('product_daily_credits')
     .select('*, vehicle:vehicles(brand, model), profile:profiles(full_name, phone)')
+    .eq('skipped', false)
     .order('due_at', { ascending: false })
     .limit(200);
   if (error) throw error;
