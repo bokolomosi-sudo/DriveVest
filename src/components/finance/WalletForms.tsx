@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Circle, Phone, Upload, Wallet } from 'lucide-react';
+import { CheckCircle2, Circle, Phone, Wallet } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Alert, EmptyState, ErrorState, LoadingState, Spinner } from '../ui/Feedback';
 import { Field } from '../ui/Field';
@@ -55,7 +55,6 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
   const [channelId, setChannelId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
-  const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const key = useRef(crypto.randomUUID());
@@ -73,14 +72,13 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
     if (!validAmount) return setError('Indiquez le montant de votre dépôt.');
     if (value < minimum) return setError(`Le dépôt minimum est de ${formatPrice(minimum, CURRENCY)}.`);
     if (reference.trim().length < 3) return setError('Indiquez la référence de la transaction reçue par SMS.');
-    if (proof && proof.size > 5 * 1024 * 1024) return setError('La preuve de paiement ne doit pas dépasser 5 Mo.');
     setBusy(true);
     try {
-      await requestDeposit({ userId, amount: value, currency: CURRENCY, method: channel.name, reference: reference.trim(), proof, idempotencyKey: key.current });
+      // Pas de capture d'écran : l'admin vérifie le paiement sur le relevé du compte de dépôt
+      await requestDeposit({ userId, amount: value, currency: CURRENCY, method: channel.name, reference: reference.trim(), idempotencyKey: key.current });
       key.current = crypto.randomUUID();
       setAmount('');
       setReference('');
-      setProof(null);
       notify('success', 'Dépôt envoyé. Il sera crédité après vérification.');
       onDone();
     } catch (err) {
@@ -174,24 +172,6 @@ export function DepositForm({ userId, onDone }: { userId: string; onDone: () => 
           value={reference}
           onChange={(e) => setReference(e.target.value)}
         />
-      </div>
-
-      <div>
-        <p className="label text-base">Preuve de paiement</p>
-        <label
-          htmlFor="dep-proof"
-          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 hover:border-green-400 hover:bg-green-50/40"
-        >
-          <Upload className="h-6 w-6 text-slate-400" aria-hidden="true" />
-          {proof ? <span className="break-all font-medium text-slate-800">{proof.name}</span> : <span>Capture d'écran ou photo (max 5 Mo)</span>}
-          <input
-            id="dep-proof"
-            type="file"
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            className="sr-only"
-            onChange={(e) => setProof(e.target.files?.[0] ?? null)}
-          />
-        </label>
       </div>
 
       {error && <Alert tone="danger">{error}</Alert>}
