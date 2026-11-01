@@ -13,7 +13,7 @@ export function ProductYieldBlock({
     vehicle.price,
     vehicle.duration_days,
     vehicle.daily_revenue_percent,
-    0, // Gain = revenus cumulés − prix, sans les frais de retrait (non affichés au client)
+    0, // Gain total = revenus cumulés sur toute la durée, sans frais de retrait
     vehicleDailyAmount(vehicle),
   );
   if (!yieldInfo) return null;
@@ -25,7 +25,7 @@ export function ProductYieldBlock({
       {!compact && <p>Revenu / jour : {formatPrice(yieldInfo.daily, currency)}</p>}
       <p className="flex flex-wrap items-baseline justify-between gap-x-2">
         <span>Gain total</span>
-        <strong className="text-lg font-extrabold text-accent-700">{formatPrice(yieldInfo.net, currency)}</strong>
+        <strong className="text-lg font-extrabold text-accent-700">{formatPrice(yieldInfo.gross, currency)}</strong>
       </p>
       {!compact && (
         <p className="mt-2 text-xs text-accent-800">

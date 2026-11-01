@@ -26,7 +26,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const cover = vehicle.images?.[0];
   const title = `${vehicle.brand} ${vehicle.model}`.trim();
   const available = vehicle.availability === 'available' && vehicle.price !== null;
-  // Gain total = revenus cumulés − prix, sans les frais de retrait (non affichés au client)
+  // Gain total = revenus cumulés sur toute la durée (même chiffre que l’aperçu admin), sans frais de retrait
   const yieldInfo = productYield(vehicle.price, vehicle.duration_days, vehicle.daily_revenue_percent, 0, vehicleDailyAmount(vehicle));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -63,7 +63,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
             {vehicle.duration_days && <InfoPill label="Durée" value={`${vehicle.duration_days} jours`} />}
             {vehicleDailyAmount(vehicle) > 0 && <InfoPill label="Revenu / jour" value={formatPrice(vehicleDailyAmount(vehicle), vehicle.currency)} />}
-            {yieldInfo && <InfoPill label="Gain total" value={formatPrice(yieldInfo.net, vehicle.currency)} valueClassName="font-extrabold text-accent-700" />}
+            {yieldInfo && <InfoPill label="Gain total" value={formatPrice(yieldInfo.gross, vehicle.currency)} valueClassName="font-extrabold text-accent-700" />}
           </div>
           <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-inner min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32">
             {cover ? (
