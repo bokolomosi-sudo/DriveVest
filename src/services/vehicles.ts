@@ -93,7 +93,13 @@ export async function getVehicle(id: string): Promise<Vehicle | null> {
 // --- Administration --------------------------------------------------------
 
 export async function adminListVehicles(status: PublicationStatus | 'all', search = ''): Promise<Vehicle[]> {
-  let query = db().from('vehicles').select(VEHICLE_SELECT).order('updated_at', { ascending: false }).limit(200);
+  // Du moins cher au plus cher (les produits sans prix en dernier), comme côté client
+  let query = db()
+    .from('vehicles')
+    .select(VEHICLE_SELECT)
+    .order('price', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: false })
+    .limit(200);
   if (status !== 'all') query = query.eq('status', status);
   const s = sanitizeSearch(search);
   if (s) query = query.or(`brand.ilike.%${s}%,model.ilike.%${s}%,reference.ilike.%${s}%`);

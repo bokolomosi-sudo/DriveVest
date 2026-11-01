@@ -8,7 +8,7 @@ import { listPublishedVehicles } from '../services/vehicles';
 
 export default function HomePage() {
   // Accueil : les deux derniers produits publiés, les autres sont sur la page Produits
-  const products = useAsync(() => listPublishedVehicles({ sort: 'recent', pageSize: 2 }), []);
+  const products = useAsync(() => listPublishedVehicles({ sort: 'price_asc', pageSize: 2 }), []);
 
   return (
     <>

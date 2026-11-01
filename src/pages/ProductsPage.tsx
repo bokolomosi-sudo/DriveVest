@@ -7,7 +7,7 @@ import { listPublishedVehicles } from '../services/vehicles';
 
 /** Tous les produits publiés par l'administration. */
 export default function ProductsPage() {
-  const { data, loading, error, reload } = useAsync(() => listPublishedVehicles({ sort: 'recent', pageSize: 200 }), []);
+  const { data, loading, error, reload } = useAsync(() => listPublishedVehicles({ sort: 'price_asc', pageSize: 200 }), []);
 
   return (
     <div className="container-page py-6 lg:py-10">
