@@ -602,13 +602,13 @@ await as(ADMIN, `update platform_settings set min_deposit = 1000 where id = 1`);
 
 const eBefore = await bal(E);
 await as(E, `select request_deposit(15000, 'CDF', 'Airtel Money', 'MP261101.1200.A11111', null, gen_random_uuid())`);
-(await receive('AirtelMoney', 'Vous avez recu 15000.00 CDF de 0974444444. Trans. ID: MP261101.1200.A11111. Solde: 99000 CDF')) === 'matched'
+(await receive('436', 'Vous avez recu 15000.00 CDF de 0974444444. Trans. ID: MP261101.1200.A11111. Solde: 99000 CDF')) === 'matched'
   && (await depStatus('MP261101.1200.A11111')) === 'confirmed' && (await bal(E)) - eBefore === 15000
   ? ok('dépôt déclaré puis SMS reçu : validé automatiquement (+15 000 FC)')
   : fail('dépôt puis SMS', JSON.stringify({ s: await depStatus('MP261101.1200.A11111'), diff: (await bal(E)) - eBefore }));
 (await notif(E, 'Dépôt crédité')) >= 1 ? ok('le membre est prévenu') : fail('notif dépôt auto', 0);
 
-(await receive('AIRTEL MONEY', 'Transaction reussie. Montant: 25,000.00 CDF. ID: MP261101.1300.B22222')) === 'unmatched'
+(await receive('436', 'Transaction reussie. Montant: 25,000.00 CDF. ID: MP261101.1300.B22222')) === 'unmatched'
   ? ok('SMS reçu avant la déclaration : mis en attente')
   : fail('SMS en attente', '');
 await as(E, `select request_deposit(25000, 'CDF', 'Airtel Money', 'mp261101.1300.b22222', null, gen_random_uuid())`);
@@ -616,14 +616,14 @@ await as(E, `select request_deposit(25000, 'CDF', 'Airtel Money', 'mp261101.1300
   ? ok('déclaration après le SMS (référence en minuscules) : validée automatiquement')
   : fail('SMS puis dépôt', await depStatus('mp261101.1300.b22222'));
 
-await receive('AirtelMoney', 'Vous avez recu 10000 CDF. Trans. ID: MP261101.1400.C33333');
+await receive('436', 'Vous avez recu 10000 CDF. Trans. ID: MP261101.1400.C33333');
 await as(E, `select request_deposit(50000, 'CDF', 'Airtel Money', 'MP261101.1400.C33333', null, gen_random_uuid())`);
 const mismatch = (await db.query(`select status from incoming_sms where body like '%C33333%'`)).rows[0].status;
 (await depStatus('MP261101.1400.C33333')) === 'pending' && mismatch === 'amount_mismatch'
   ? ok('montant différent (10 000 au lieu de 50 000) : rien n\'est crédité, signalé à l\'admin')
   : fail('montant différent', JSON.stringify({ dep: await depStatus('MP261101.1400.C33333'), mismatch }));
 
-await expectError('jeton invalide refusé', () => receive('AirtelMoney', 'Trans. ID: MP261101.1500.D44444', 'mauvais'), /Jeton invalide/);
+await expectError('jeton invalide refusé', () => receive('436', 'Trans. ID: MP261101.1500.D44444', 'mauvais'), /Jeton invalide/);
 await as(E, `select request_deposit(5000, 'CDF', 'Airtel Money', 'MP261101.1600.E55555', null, gen_random_uuid())`);
 (await receive('+243970000000', 'Vous avez recu 5000 CDF. Trans. ID: MP261101.1600.E55555')) === 'ignored_sender'
   && (await depStatus('MP261101.1600.E55555')) === 'pending'

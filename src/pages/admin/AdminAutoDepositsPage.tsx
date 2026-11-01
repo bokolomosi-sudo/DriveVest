@@ -96,7 +96,7 @@ export default function AdminAutoDepositsPage() {
           <h2 className="text-lg font-semibold">Configuration de SMS Forwarder</h2>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
             <li>Installez <strong>SMS Forwarder</strong> sur le téléphone qui reçoit les paiements (le numéro du compte de dépôt).</li>
-            <li>Ajoutez une règle <strong>Webhook</strong> : <em>Sender</em> = <code>*</code> (le site trie lui-même les expéditeurs).</li>
+            <li>Ajoutez une règle <strong>Webhook</strong> : <em>Sender</em> = <code>436</code> (le numéro qui envoie les SMS Airtel Money) ; les autres SMS ne sont pas transférés.</li>
             <li>Dans <em>Webhook URL</em>, collez l’adresse ci-dessous. Gardez le modèle JSON proposé par défaut.</li>
             <li>Activez <em>Store failed messages for retry</em>, puis touchez <strong>TEST</strong> et <strong>ADD</strong>.</li>
           </ol>
@@ -112,7 +112,7 @@ export default function AdminAutoDepositsPage() {
             <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-accent-600" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
             <span className="text-sm"><span className="block font-medium text-slate-900">Validation automatique activée</span><span className="text-slate-500">Désactivée, les SMS sont enregistrés mais les dépôts attendent votre validation manuelle.</span></span>
           </label>
-          <Field label="Expéditeurs autorisés (un par ligne)" htmlFor="ad-senders" hint="Nom ou numéro exact qui envoie le SMS de paiement (ex. AirtelMoney). Les SMS des autres expéditeurs sont ignorés : un faux SMS envoyé depuis un téléphone ne crédite rien.">
+          <Field label="Expéditeurs autorisés (un par ligne)" htmlFor="ad-senders" hint="Nom ou numéro exact qui envoie le SMS de paiement (ex. 436 pour Airtel Money). Les SMS des autres expéditeurs sont ignorés : un faux SMS envoyé depuis un téléphone ne crédite rien.">
             <textarea id="ad-senders" rows={3} className="input font-mono" value={senders} onChange={(e) => setSenders(e.target.value)} />
           </Field>
           <div className="flex flex-wrap gap-2">

@@ -13,7 +13,7 @@ create table if not exists public.auto_deposit_settings (
   enabled boolean not null default true,
   webhook_token text not null default replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''),
   -- Expéditeurs acceptés (nom ou numéro qui envoie le SMS de paiement), insensible à la casse
-  allowed_senders text[] not null default array['AirtelMoney', 'Airtel', 'AIRTEL MONEY'],
+  allowed_senders text[] not null default array['436'],
   updated_at timestamptz not null default now()
 );
 insert into public.auto_deposit_settings (id) values (1) on conflict (id) do nothing;
