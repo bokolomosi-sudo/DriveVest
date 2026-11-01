@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Megaphone,
+  MessageSquareText,
   Receipt,
   ScrollText,
   Settings,
@@ -71,6 +72,7 @@ const AdminRulesPage = lazyPage(() => import('./pages/admin/AdminRulesPage'));
 const AdminRevenuePage = lazyPage(() => import('./pages/admin/AdminRevenuePage'));
 const AdminWalletPage = lazyPage(() => import('./pages/admin/AdminWalletPage'));
 const AdminGiftsPage = lazyPage(() => import('./pages/admin/AdminGiftsPage'));
+const AdminAutoDepositsPage = lazyPage(() => import('./pages/admin/AdminAutoDepositsPage'));
 
 function accountNav(s: PlatformSettings | null): SideNavItem[] {
   return [
@@ -99,6 +101,7 @@ const ADMIN_NAV: SideNavItem[] = [
   { to: '/admin/commandes', label: 'Commandes', icon: ShoppingBag },
   { to: '/admin/finances', label: 'Paiements', icon: CreditCard },
   { to: '/admin/portefeuilles', label: 'Dépôts et retraits', icon: Wallet },
+  { to: '/admin/depots-auto', label: 'Dépôts automatiques', icon: MessageSquareText },
   { to: '/admin/regles', label: 'Règles et bonus', icon: SlidersHorizontal },
   { to: '/admin/revenus', label: 'Revenus des produits', icon: TrendingUp },
   { to: '/admin/bonus', label: 'Bonus surprise', icon: Gift },
@@ -183,6 +186,7 @@ export default function App() {
           <Route path="regles" element={<AdminRulesPage />} />
           <Route path="revenus" element={<AdminRevenuePage />} />
           <Route path="bonus" element={<AdminGiftsPage />} />
+          <Route path="depots-auto" element={<AdminAutoDepositsPage />} />
           <Route path="portefeuilles" element={<AdminWalletPage />} />
         </Route>
 
