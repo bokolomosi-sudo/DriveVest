@@ -32,8 +32,9 @@ export function SupportContactCard() {
     if (busy || !user) return;
     setError(null);
     const digits = number.replace(/[^\d]/g, '');
-    if (number.trim() && !/^0\d{9}$/.test(digits) && !/^243\d{9}$/.test(digits)) {
-      return setError('Numéro WhatsApp invalide : 10 chiffres commençant par 0 (ex. 0971234567).');
+    // N'importe quel numéro : local de RDC (0…) ou étranger avec son indicatif (+33…, +250…)
+    if (number.trim() && (digits.length < 6 || digits.length > 15)) {
+      return setError('Numéro WhatsApp invalide : entre 6 et 15 chiffres.');
     }
     if (group.trim() && !/^https:\/\/chat\.whatsapp\.com\//.test(group.trim())) {
       return setError('Le lien du groupe doit commencer par https://chat.whatsapp.com/');
@@ -65,7 +66,7 @@ export function SupportContactCard() {
         <Field label="Nom sur WhatsApp" htmlFor="sc-name" hint="Ex. : Service client Drivest">
           <input id="sc-name" className="input" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Numéro WhatsApp" htmlFor="sc-number" hint="10 chiffres commençant par 0">
+        <Field label="Numéro WhatsApp" htmlFor="sc-number" hint="Numéro de RDC (0971234567) ou étranger avec indicatif (+33…)">
           <input id="sc-number" type="tel" inputMode="tel" className="input font-mono" placeholder="0971234567" value={number} onChange={(e) => setNumber(e.target.value)} />
         </Field>
         <Field label="Horaires" htmlFor="sc-hours" hint="Ex. : Lundi à samedi, 8 h – 20 h" className="sm:col-span-2">

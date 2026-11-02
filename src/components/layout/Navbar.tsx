@@ -8,6 +8,7 @@ import { Logo } from '../Logo';
 const BASE_LINKS = [
   { to: '/produits', label: 'Produits' },
   { to: '/actualites', label: 'Actualités' },
+  { to: '/guide', label: 'Guide' },
   { to: '/service-client', label: 'Service client' },
 ];
 

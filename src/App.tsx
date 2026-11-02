@@ -41,6 +41,8 @@ const AnnouncementsPage = lazyPage(() => import('./pages/AnnouncementsPage'));
 const MessagesPage = lazyPage(() => import('./pages/MessagesPage'));
 const SupportPage = lazyPage(() => import('./pages/SupportPage'));
 const LegalPage = lazyPage(() => import('./pages/LegalPage'));
+const GuidePage = lazyPage(() => import('./pages/info/GuidePage'));
+const FaqPage = lazyPage(() => import('./pages/info/FaqPage'));
 
 const DashboardPage = lazyPage(() => import('./pages/account/DashboardPage'));
 const MyProductsPage = lazyPage(() => import('./pages/account/MyProductsPage'));
@@ -122,6 +124,17 @@ export default function App() {
       {/* Après la première connexion : nom, province et ville */}
       <Route path="bienvenue" element={<ProtectedRoute allowIncompleteProfile><WelcomePage /></ProtectedRoute>} />
 
+      {/* Guide et pages légales : lisibles sans compte (avant l'inscription) */}
+      <Route element={<PublicLayout />}>
+        <Route path="guide" element={<GuidePage />} />
+        <Route path="guide/:slug" element={<GuidePage />} />
+        <Route path="faq" element={<FaqPage />} />
+        <Route path="mentions-legales" element={<LegalPage doc="mentions" />} />
+        <Route path="confidentialite" element={<LegalPage doc="privacy" />} />
+        <Route path="conditions-utilisation" element={<LegalPage doc="terms" />} />
+        <Route path="cookies" element={<LegalPage doc="cookies" />} />
+      </Route>
+
       <Route
         element={
           <ProtectedRoute>
@@ -136,7 +149,6 @@ export default function App() {
         <Route path="actualites" element={<AnnouncementsPage />} />
         <Route path="messages" element={<MessagesPage />} />
         <Route path="service-client" element={<SupportPage />} />
-        <Route path="mentions-legales" element={<LegalPage />} />
 
         <Route
           path="compte"

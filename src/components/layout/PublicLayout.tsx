@@ -1,15 +1,19 @@
 import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { LoadingState } from '../ui/Feedback';
+import { Footer } from './Footer';
 import { MobileTabBar } from './MobileTabBar';
 import { Navbar } from './Navbar';
 import { PageErrorBoundary } from '../PageErrorBoundary';
 
 export function PublicLayout() {
   const { pathname } = useLocation();
+  // Visiteur sans compte (guide, pages légales) : pas d'onglets vers l'espace membre
+  const { user } = useAuth();
   return (
-    <div className="flex min-h-screen flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className={`flex min-h-screen flex-col md:pb-0 ${user ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))]' : ''}`}>
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
         Aller au contenu
       </a>
@@ -28,7 +32,8 @@ export function PublicLayout() {
           </Suspense>
         </PageErrorBoundary>
       </main>
-      <MobileTabBar />
+      <Footer />
+      {user && <MobileTabBar />}
     </div>
   );
 }

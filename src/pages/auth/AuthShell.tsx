@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
   return (
@@ -21,6 +22,12 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
         </div>
         <div className="mt-6">{children}</div>
         {footer && <div className="mt-6 text-center text-sm text-slate-500">{footer}</div>}
+        <nav aria-label="Aide et informations légales" className="mt-5 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-slate-400">
+          <Link to="/guide" className="hover:text-slate-700">Guide</Link>
+          <Link to="/faq" className="hover:text-slate-700">FAQ</Link>
+          <Link to="/conditions-utilisation" className="hover:text-slate-700">Conditions</Link>
+          <Link to="/confidentialite" className="hover:text-slate-700">Confidentialité</Link>
+        </nav>
       </div>
     </div>
   );

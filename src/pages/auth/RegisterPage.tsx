@@ -83,6 +83,11 @@ export default function RegisterPage() {
         <button className="btn-primary h-12 w-full rounded-xl text-base shadow-md" disabled={busy}>
           {busy && <Spinner className="h-4 w-4" />} Créer mon compte
         </button>
+        <p className="text-center text-xs text-slate-500">
+          En créant un compte, vous acceptez les{' '}
+          <Link to="/conditions-utilisation" className="underline hover:text-slate-800">conditions d'utilisation</Link> et la{' '}
+          <Link to="/confidentialite" className="underline hover:text-slate-800">politique de confidentialité</Link>.
+        </p>
       </form>
     </AuthShell>
   );

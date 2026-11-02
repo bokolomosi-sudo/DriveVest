@@ -44,7 +44,8 @@ function WhatsAppSupport() {
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sur WhatsApp</p>
             <p className="break-words text-lg font-bold text-slate-900">{name}</p>
-            {number && <p className="font-mono text-sm text-slate-600">{formatLocalPhone(number)}</p>}
+            {/* Numéro de RDC affiché en local (0…), numéro étranger tel que saisi */}
+            {number && <p className="font-mono text-sm text-slate-600">{number.replace(/\D/g, '').startsWith('243') ? formatLocalPhone(number) : number}</p>}
             {settings?.support_hours && <p className="text-sm text-slate-500">{settings.support_hours}</p>}
           </div>
         </div>
