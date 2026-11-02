@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/:path((?!\\.well-known/).*)",
+      "has": [{ "type": "host", "value": "drivevest-beta.vercel.app" }],
+      "destination": "https://www.drivest.world/:path",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|icons/|logos/|sw\\.js|manifest\\.webmanifest|favicon\\.svg|robots\\.txt).*)",
