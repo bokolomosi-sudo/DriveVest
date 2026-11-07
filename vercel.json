@@ -3,7 +3,7 @@
     {
       "source": "/:path((?!\\.well-known/).*)",
       "has": [{ "type": "host", "value": "drivevest-beta.vercel.app" }],
-      "destination": "https://www.drivest.world/:path",
+      "destination": "https://drivest.world/:path",
       "permanent": false
     }
   ],

@@ -4,7 +4,7 @@ import type { ReferralCommission, TeamMember, TeamReward, TeamRewardTier } from 
 // --- Parrainage ------------------------------------------------------------
 
 // Adresse officielle : le lien copié pointe toujours vers le domaine, même depuis l'ancien lien Vercel ou l'application
-const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://www.drivest.world').replace(/\/+$/, '');
+const SITE_URL = (import.meta.env.VITE_SITE_URL || 'https://drivest.world').replace(/\/+$/, '');
 
 export function referralLink(code: string): string {
   return `${SITE_URL}/inscription?ref=${encodeURIComponent(code)}`;
