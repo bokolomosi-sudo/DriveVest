@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/layout/SideNavLayout';
 import { PageMeta } from '../../components/PageMeta';
 import { ErrorState, LoadingState } from '../../components/ui/Feedback';
 import { useAsync } from '../../hooks/useAsync';
-import { formatPrice } from '../../lib/format';
+import { CURRENCY, formatPrice } from '../../lib/format';
 import { ORDER_STATUS_LABELS, PUBLICATION_STATUS_LABELS, entries } from '../../lib/labels';
 import { getDashboardStats } from '../../services/admin';
 
@@ -17,6 +17,16 @@ export default function AdminDashboardPage() {
   const totalOrders = Object.values(data.orders_by_status).reduce((a, b) => a + (b ?? 0), 0);
   const maxOrders = Math.max(1, ...Object.values(data.orders_by_status).map((v) => v ?? 0));
   const totalVehicles = Object.values(data.vehicles_by_status).reduce((a, b) => a + (b ?? 0), 0);
+
+  const money = (v: number | undefined) => formatPrice(Number(v ?? 0), CURRENCY);
+  const totals = [
+    { label: 'Total déjà reçu', value: money(data.deposits_received_total), sub: 'Dépôts validés' },
+    { label: 'Total gagné par les utilisateurs', value: money(data.users_earned_total), sub: 'Revenus, commissions, récompenses et bonus' },
+    { label: 'Retraits payés', value: money(data.withdrawals_paid_total) },
+    { label: 'Commissions versées', value: money(data.commissions_paid_total) },
+    { label: 'Produits vendus', value: String(data.products_sold ?? 0) },
+    { label: 'Produits actifs', value: String(data.products_active ?? 0) },
+  ];
 
   const tiles = [
     { label: 'Utilisateurs', value: data.users_total, sub: `${data.users_blocked} bloqué(s)`, icon: Users, to: '/admin/utilisateurs' },
@@ -31,6 +41,22 @@ export default function AdminDashboardPage() {
     <>
       <PageMeta title="Administration" noindex />
       <PageHeader title="Tableau de bord" description="Statistiques calculées en temps réel à partir de la base de données." />
+
+      <div className="mb-4 rounded-2xl bg-gradient-to-br from-accent-700 to-night-900 p-5 text-white shadow-md">
+        <p className="text-sm text-white/80">Solde total des membres</p>
+        <p className="mt-1 break-words text-3xl font-extrabold">{money(data.members_balance_total)}</p>
+        <p className="mt-1 text-xs text-white/70">Montant disponible sur les comptes, retirable par les membres</p>
+      </div>
+
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-3">
+        {totals.map(({ label, value, sub }) => (
+          <div key={label} className="card p-4">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="mt-1 break-words text-xl font-bold text-slate-900">{value}</p>
+            {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+          </div>
+        ))}
+      </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map(({ label, value, sub, icon: Icon, to, alert }) => (

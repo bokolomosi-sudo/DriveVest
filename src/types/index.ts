@@ -433,6 +433,14 @@ export interface DashboardStats {
   withdrawals_pending: number;
   kyc_pending: number;
   invested_by_currency: Record<string, number>;
+  /** Montants cumulés en FC */
+  deposits_received_total: number;
+  members_balance_total: number;
+  users_earned_total: number;
+  withdrawals_paid_total: number;
+  commissions_paid_total: number;
+  products_sold: number;
+  products_active: number;
 }
 
 /** Palier de récompense d'équipe vu par le membre */
