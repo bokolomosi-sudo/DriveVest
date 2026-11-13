@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Gem, XCircle } from 'lucide-react';
 import { Spinner } from '../ui/Feedback';
 import { useToast } from '../../context/ToastContext';
 import { toErrorMessage } from '../../lib/errors';
@@ -25,6 +25,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const { notify } = useToast();
   const cover = vehicle.images?.[0];
   const title = `${vehicle.brand} ${vehicle.model}`.trim();
+  const prestige = vehicle.collection === 'prestige';
   const available = vehicle.availability === 'available' && vehicle.price !== null;
   // Gain total = revenus cumulés sur toute la durée (même chiffre que l’aperçu admin), sans frais de retrait
   const yieldInfo = productYield(vehicle.price, vehicle.duration_days, vehicle.daily_revenue_percent, 0, vehicleDailyAmount(vehicle));
@@ -55,8 +56,14 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   };
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-gradient-to-br from-night-800 to-night-950 p-1.5 shadow-lg">
-      <p className="py-2 text-center text-xs font-bold uppercase tracking-[0.2em] text-accent-300">Produit</p>
+    <article
+      className={`overflow-hidden rounded-3xl p-1.5 shadow-lg ${
+        prestige ? 'bg-gradient-to-br from-amber-400 via-amber-600 to-amber-800' : 'bg-gradient-to-br from-night-800 to-night-950'
+      }`}
+    >
+      <p className={`flex items-center justify-center gap-1.5 py-2 text-center text-xs font-bold uppercase tracking-[0.2em] ${prestige ? 'text-white' : 'text-accent-300'}`}>
+        {prestige && <Gem className="h-3.5 w-3.5" />} {prestige ? 'Prestige' : 'Produit'}
+      </p>
       <div className="rounded-[1.25rem] bg-white p-3 min-[360px]:p-4">
         <h3 className="break-words text-lg font-extrabold tracking-tight text-slate-900 min-[360px]:text-xl">{title}</h3>
         <div className="mt-3 flex gap-3">

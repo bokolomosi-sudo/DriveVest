@@ -255,6 +255,12 @@ lv[0] === 3750 && lv[1] === 0 && lv[2] === 150
 await db.query(`update orders set status = 'cancelled' where id = any($1::uuid[])`, [simulated.rows.map((r) => r.id)]);
 const team = await as(R1, `select level from my_referrals()`);
 JSON.stringify(team.rows.map((r) => r.level)) === '[1,2,3]' ? ok('équipe visible sur 3 niveaux') : fail('équipe', JSON.stringify(team.rows));
+await expectOk('espace « standard » par défaut, « prestige » accepté', async () => {
+  const r = await as(ADMIN, `insert into vehicles (brand, model, condition) values ('Esp', 'Ace', 'new') returning collection`);
+  if (r.rows[0].collection !== 'standard') throw new Error(`reçu ${r.rows[0].collection}`);
+  await as(ADMIN, `insert into vehicles (brand, model, condition, collection) values ('Pre', 'Stige', 'new', 'prestige')`);
+});
+await expectError('espace inconnu refusé', () => as(ADMIN, `insert into vehicles (brand, model, condition, collection) values ('X', 'Y', 'new', 'vip')`), /vehicles_collection_check/);
 await expectError('produit en dollars refusé', () => as(ADMIN, `insert into vehicles (brand, model, condition, currency) values ('X', 'Y', 'new', 'USD')`), /vehicles_currency_cdf/);
 
 console.log('14. Bonus d\'inscription');

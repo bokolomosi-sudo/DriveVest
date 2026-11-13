@@ -8,6 +8,7 @@ import type {
   FuelType,
   OrderStatus,
   PaymentStatus,
+  ProductCollection,
   PublicationStatus,
   RefundStatus,
   SupportStatus,
@@ -126,6 +127,11 @@ export const PUBLICATION_STATUS_TONES: Record<PublicationStatus, Tone> = {
   published: 'success',
   inactive: 'warning',
   archived: 'danger',
+};
+
+export const COLLECTION_LABELS: Record<ProductCollection, string> = {
+  standard: 'Produits',
+  prestige: 'Prestige',
 };
 
 export const CATEGORY_STATUS_LABELS: Record<CategoryStatus, string> = {

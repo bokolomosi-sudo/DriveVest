@@ -14,21 +14,23 @@ import { dailyRevenueAmount } from '../../lib/productYield';
 import {
   AVAILABILITY_LABELS,
   AVAILABILITY_TONES,
+  COLLECTION_LABELS,
   PUBLICATION_STATUS_LABELS,
   PUBLICATION_STATUS_TONES,
   entries,
 } from '../../lib/labels';
 import { adminDeleteVehicle, adminListVehicles, adminSetVehicleStatus, vehicleImageUrl } from '../../services/vehicles';
-import type { PublicationStatus, Vehicle } from '../../types';
+import type { ProductCollection, PublicationStatus, Vehicle } from '../../types';
 
 export default function AdminVehiclesPage() {
   const { notify } = useToast();
   const [status, setStatus] = useState<PublicationStatus | 'all'>('all');
+  const [collection, setCollection] = useState<ProductCollection | 'all'>('all');
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const { data, loading, error, reload } = useAsync(() => adminListVehicles(status, query), [status, query]);
+  const { data, loading, error, reload } = useAsync(() => adminListVehicles(status, query, collection), [status, query, collection]);
 
   const changeStatus = async (id: string, next: PublicationStatus) => {
     try {
@@ -73,6 +75,10 @@ export default function AdminVehiclesPage() {
           <option value="all">Tous les statuts</option>
           {entries(PUBLICATION_STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
+        <select className="input sm:w-44" value={collection} onChange={(e) => setCollection(e.target.value as ProductCollection | 'all')} aria-label="Filtrer par espace">
+          <option value="all">Tous les espaces</option>
+          {entries(COLLECTION_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
       </div>
 
       {loading ? (
@@ -105,7 +111,10 @@ export default function AdminVehiclesPage() {
                           {v.images?.[0] && <img src={vehicleImageUrl(v.images[0], 200)} alt="" className="h-full w-full object-cover" />}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-900">{v.brand} {v.model} {v.year ?? ''}</p>
+                          <p className="flex flex-wrap items-center gap-1.5 font-semibold text-slate-900">
+                            {v.brand} {v.model} {v.year ?? ''}
+                            {v.collection === 'prestige' && <Badge tone="warning">Prestige</Badge>}
+                          </p>
                           <p className="text-xs text-slate-500">{v.reference} · {v.category?.name ?? 'Sans catégorie'}</p>
                         </div>
                       </div>

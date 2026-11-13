@@ -12,6 +12,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { toErrorMessage } from '../../lib/errors';
 import {
   AVAILABILITY_LABELS,
+  COLLECTION_LABELS,
   CONDITION_LABELS,
   FUEL_LABELS,
   PUBLICATION_STATUS_LABELS,
@@ -35,6 +36,7 @@ import { productYield } from '../../lib/productYield';
 import type {
   AvailabilityStatus,
   FuelType,
+  ProductCollection,
   PublicationStatus,
   TransmissionType,
   Vehicle,
@@ -44,7 +46,7 @@ import type {
 
 type FormState = Record<
   | 'category_id' | 'brand' | 'model' | 'year' | 'description' | 'price' | 'currency' | 'condition'
-  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'daily_revenue_percent' | 'availability' | 'location'
+  | 'mileage_km' | 'fuel' | 'transmission' | 'engine' | 'color' | 'seats' | 'duration_days' | 'daily_revenue_percent' | 'availability' | 'collection' | 'location'
   | 'delivery_terms' | 'seller_name' | 'seller_details' | 'status',
   string
 >;
@@ -68,6 +70,7 @@ function toForm(v: Vehicle | null, _currency: string): FormState {
     duration_days: v?.duration_days?.toString() ?? '',
     daily_revenue_percent: v?.daily_revenue_percent?.toString() ?? '',
     availability: v?.availability ?? 'available',
+    collection: v?.collection ?? 'standard',
     location: v?.location ?? '',
     delivery_terms: v?.delivery_terms ?? '',
     seller_name: v?.seller_name ?? '',
@@ -101,6 +104,7 @@ function toInput(f: FormState): VehicleInput {
     daily_revenue_percent: percent,
     daily_revenue_cap: price && percent ? Math.round((price * percent) / 100 * 100) / 100 : null,
     availability: f.availability as AvailabilityStatus,
+    collection: f.collection as ProductCollection,
     location: text(f.location),
     delivery_terms: text(f.delivery_terms),
     seller_name: text(f.seller_name),
@@ -388,6 +392,11 @@ export default function AdminVehicleFormPage() {
             <Field label="Disponibilité" htmlFor="v-avail">
               <select id="v-avail" className="input" value={form.availability} onChange={set('availability')}>
                 {entries(AVAILABILITY_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </Field>
+            <Field label="Espace sur la page Produits" htmlFor="v-collection" hint="« Prestige » : affiché dans l'onglet des produits précieux.">
+              <select id="v-collection" className="input" value={form.collection} onChange={set('collection')}>
+                {entries(COLLECTION_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </Field>
             <Field label="Statut de publication" htmlFor="v-status">

@@ -7,6 +7,8 @@ export type VehicleCondition = 'new' | 'used';
 export type FuelType = 'petrol' | 'diesel' | 'hybrid' | 'plug_in_hybrid' | 'electric' | 'lpg' | 'other';
 export type TransmissionType = 'manual' | 'automatic' | 'semi_automatic' | 'other';
 export type AvailabilityStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
+/** Espace de la page Produits : produits habituels ou produits précieux (Prestige). */
+export type ProductCollection = 'standard' | 'prestige';
 export type OrderStatus =
   | 'draft'
   | 'pending_confirmation'
@@ -152,6 +154,7 @@ export interface Vehicle {
   /** Montant quotidien correspondant au pourcentage (FC) */
   daily_revenue_cap: number | null;
   availability: AvailabilityStatus;
+  collection: ProductCollection;
   location: string | null;
   delivery_terms: string | null;
   seller_name: string | null;

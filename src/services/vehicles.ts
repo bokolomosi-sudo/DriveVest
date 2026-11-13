@@ -1,6 +1,7 @@
 import { db, supabase } from '../lib/supabase';
 import type {
   FuelType,
+  ProductCollection,
   PublicationStatus,
   TransmissionType,
   Vehicle,
@@ -39,6 +40,7 @@ export type VehicleSort = 'recent' | 'price_asc' | 'price_desc' | 'year_desc';
 export interface VehicleFilters {
   search?: string;
   categoryId?: string;
+  collection?: ProductCollection;
   condition?: VehicleCondition;
   fuel?: FuelType;
   transmission?: TransmissionType;
@@ -54,6 +56,7 @@ export async function listPublishedVehicles(f: VehicleFilters = {}): Promise<{ i
   let query = db().from('vehicles').select(VEHICLE_SELECT, { count: 'exact' }).eq('status', 'published');
 
   if (f.categoryId) query = query.eq('category_id', f.categoryId);
+  if (f.collection) query = query.eq('collection', f.collection);
   if (f.condition) query = query.eq('condition', f.condition);
   if (f.fuel) query = query.eq('fuel', f.fuel);
   if (f.transmission) query = query.eq('transmission', f.transmission);
@@ -92,7 +95,11 @@ export async function getVehicle(id: string): Promise<Vehicle | null> {
 
 // --- Administration --------------------------------------------------------
 
-export async function adminListVehicles(status: PublicationStatus | 'all', search = ''): Promise<Vehicle[]> {
+export async function adminListVehicles(
+  status: PublicationStatus | 'all',
+  search = '',
+  collection: ProductCollection | 'all' = 'all',
+): Promise<Vehicle[]> {
   // Du moins cher au plus cher (les produits sans prix en dernier), comme côté client
   let query = db()
     .from('vehicles')
@@ -101,6 +108,7 @@ export async function adminListVehicles(status: PublicationStatus | 'all', searc
     .order('updated_at', { ascending: false })
     .limit(200);
   if (status !== 'all') query = query.eq('status', status);
+  if (collection !== 'all') query = query.eq('collection', collection);
   const s = sanitizeSearch(search);
   if (s) query = query.or(`brand.ilike.%${s}%,model.ilike.%${s}%,reference.ilike.%${s}%`);
   const { data, error } = await query;
@@ -128,6 +136,7 @@ export type VehicleInput = Pick<
   | 'daily_revenue_percent'
   | 'daily_revenue_cap'
   | 'availability'
+  | 'collection'
   | 'location'
   | 'delivery_terms'
   | 'seller_name'
