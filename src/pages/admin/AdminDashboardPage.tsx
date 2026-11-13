@@ -19,6 +19,9 @@ export default function AdminDashboardPage() {
   const totalVehicles = Object.values(data.vehicles_by_status).reduce((a, b) => a + (b ?? 0), 0);
 
   const money = (v: number | undefined) => formatPrice(Number(v ?? 0), CURRENCY);
+  // Trésorerie estimée : argent entré (dépôts validés) moins argent sorti (retraits payés, montant net versé)
+  const treasury = Number(data.deposits_received_total ?? 0) - Number(data.withdrawals_paid_total ?? 0);
+  const shortfall = Number(data.members_balance_total ?? 0) - treasury;
   const totals = [
     { label: 'Total déjà reçu', value: money(data.deposits_received_total), sub: 'Dépôts validés' },
     { label: 'Total gagné par les utilisateurs', value: money(data.users_earned_total), sub: 'Revenus, commissions, récompenses et bonus' },
@@ -42,11 +45,33 @@ export default function AdminDashboardPage() {
       <PageMeta title="Administration" noindex />
       <PageHeader title="Tableau de bord" description="Statistiques calculées en temps réel à partir de la base de données." />
 
-      <div className="mb-4 rounded-2xl bg-gradient-to-br from-accent-700 to-night-900 p-5 text-white shadow-md">
-        <p className="text-sm text-white/80">Solde total des membres</p>
-        <p className="mt-1 break-words text-3xl font-extrabold">{money(data.members_balance_total)}</p>
-        <p className="mt-1 text-xs text-white/70">Montant disponible sur les comptes, retirable par les membres</p>
+      <div className="mb-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl bg-gradient-to-br from-accent-700 to-night-900 p-5 text-white shadow-md">
+          <p className="text-sm text-white/80">Solde total des membres</p>
+          <p className="mt-1 break-words text-3xl font-extrabold">{money(data.members_balance_total)}</p>
+          <p className="mt-1 text-xs text-white/70">Ce que la plateforme doit encore aux membres (retirable par eux)</p>
+        </div>
+        <div className="rounded-2xl bg-gradient-to-br from-night-700 to-night-950 p-5 text-white shadow-md">
+          <p className="text-sm text-white/80">Trésorerie estimée</p>
+          <p className="mt-1 break-words text-3xl font-extrabold">{money(treasury)}</p>
+          <p className="mt-1 text-xs text-white/70">Dépôts validés − retraits payés : argent qui devrait être sur le compte Drivest</p>
+        </div>
       </div>
+
+      {shortfall > 0 ? (
+        <div role="alert" className="mb-4 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <strong>Attention :</strong> le solde des membres dépasse la trésorerie estimée de <strong>{money(shortfall)}</strong>.
+            Si tous les membres retiraient leur solde, le compte Drivest ne suffirait pas.
+          </p>
+        </div>
+      ) : (
+        <p className="mb-4 text-xs text-slate-500">
+          Marge : la trésorerie estimée couvre le solde des membres avec <strong>{money(-shortfall)}</strong> d&apos;avance.
+          Estimation : ne tient pas compte des frais de l&apos;opérateur ni des sorties d&apos;argent faites hors de la plateforme.
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-3">
         {totals.map(({ label, value, sub }) => (
