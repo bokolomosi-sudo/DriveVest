@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Catalogue Prestige Drivest</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+  /* A4 portrait : 1240 × 1754 px (rendu ×2 = 2480 × 3508, soit 300 dpi) */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1240px; height: 1754px; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif; color: #fff; overflow: hidden;
+    background:
+      radial-gradient(900px 600px at 100% 0%, rgba(212,175,55,.22), transparent 60%),
+      radial-gradient(900px 700px at 0% 100%, rgba(20,184,151,.22), transparent 60%),
+      linear-gradient(160deg, #11244a 0%, #0b1a36 45%, #060f22 100%);
+  }
+  .wrap { padding: 56px 60px 44px; height: 100%; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .logo { width: 72px; height: 72px; border-radius: 20px; background: #fff; display: grid; place-items: center; }
+  .brand-name { font-size: 46px; font-weight: 900; letter-spacing: -1px; }
+  .brand-name span { color: #2fd0b0; }
+  .tag { font-size: 20px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #1a1305;
+    background: linear-gradient(90deg, #f3d77a, #d4af37 55%, #b8891f); padding: 12px 26px; border-radius: 999px; }
+  .title { margin-top: 34px; text-align: center; }
+  .title .kicker { font-size: 20px; font-weight: 700; letter-spacing: 8px; text-transform: uppercase; color: #e9c968; }
+  .title h1 { margin-top: 8px; font-family: 'Playfair Display', serif; font-size: 82px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .title h1 em { font-style: normal; background: linear-gradient(90deg, #f6e08f, #d4af37 60%, #c39222); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .title p { margin-top: 14px; font-size: 22px; color: #b3c6e8; font-weight: 500; }
+  .rule { margin: 22px auto 0; width: 220px; height: 3px; background: linear-gradient(90deg, transparent, #d4af37, transparent); }
+
+  .grid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; flex: 1; }
+  .card { background: #fff; color: #0f172a; border-radius: 26px; overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 16px 36px rgba(0,0,0,.4); border: 2px solid rgba(212,175,55,.65); }
+  .photo { position: relative; height: 196px; background: #0b1a36 center/cover no-repeat; }
+  .photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(6,15,34,.55)); }
+  .badge { position: absolute; top: 12px; left: 12px; z-index: 1; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #1a1305; background: linear-gradient(90deg, #f3d77a, #d4af37); padding: 5px 12px; border-radius: 999px; }
+  .body { padding: 16px 20px 18px; display: flex; flex-direction: column; flex: 1; }
+  .brandline { font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #a07a16; }
+  .name { margin-top: 2px; font-size: 26px; font-weight: 900; letter-spacing: -.5px; line-height: 1.1; }
+  .price { margin-top: 10px; font-size: 34px; font-weight: 900; color: #0b1a36; letter-spacing: -1px; }
+  .price small { font-size: 18px; font-weight: 800; color: #475569; margin-left: 4px; }
+  .stats { margin-top: auto; padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { border-radius: 14px; padding: 10px 12px; }
+  .stat .lbl { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .stat .val { margin-top: 2px; font-size: 22px; font-weight: 900; letter-spacing: -.5px; }
+  .daily { background: #e6f8f4; color: #0b6b58; }
+  .daily .val { color: #0a7f68; }
+  .dur { background: #f1f5f9; color: #475569; }
+  .dur .val { color: #0f172a; }
+
+  footer { margin-top: 30px; display: flex; align-items: center; justify-content: space-between; font-size: 20px; color: #b3c6e8; }
+  footer b { color: #fff; }
+  footer .site { font-size: 24px; font-weight: 800; color: #2fd0b0; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 32 32" width="54" height="54"><rect width="32" height="32" rx="8" fill="#0b1a36"/><path d="M9 8h6.5a8 8 0 0 1 0 16H9z" fill="none" stroke="#14b897" stroke-width="3" stroke-linejoin="round"/><path d="M13 16h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="brand-name">Drive<span>st</span></div>
+    </div>
+    <div class="tag">Collection Prestige</div>
+  </header>
+
+  <div class="title">
+    <div class="kicker">Catalogue officiel</div>
+    <h1>Produits <em>Prestige</em></h1>
+    <p>Une sélection haut de gamme : choisissez votre produit et recevez vos revenus chaque jour.</p>
+    <div class="rule"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <div>Disponible maintenant sur l'application <b>Drivest</b></div>
+    <div class="site">drivest.world</div>
+  </footer>
+</div>
+
+<script>
+  const P = [
+    ['Aston Martin', 'DBX707', 10000, 30, 1000, '1664928217716-2cb15c89783e'],
+    ['Ferrari', 'Purosangue', 20000, 35, 2500, '1731317913350-df41a6c3ab3b'],
+    ['Range Rover', 'Autobiography', 30000, 41, 4500, '1767274592417-c986b7619c8c'],
+    ['Mercedes-Maybach', 'Classe S 680', 50000, 41, 8000, '1749454006955-d677069782c4'],
+    ['Bentley', 'Continental GT', 70000, 47, 11200, '1661683768522-2113b9ad82f9'],
+    ['Porsche', '911 Turbo S', 120000, 50, 21600, '1611651336487-802fe164d3e5'],
+    ['Rolls-Royce', 'Cullinan', 170000, 51, 32300, '1772990915311-0710c4e7e74a'],
+    ['Lamborghini', 'Urus S', 225000, 61, 45000, '1707030949340-3435af59fe01'],
+    ['Mercedes-AMG', 'G 63', 265000, 110, 53000, '1648413653877-ade5eefd2f1b'],
+  ];
+  const fc = (n) => n.toLocaleString('fr-FR').replace(/ | /g, ' ');
+  document.getElementById('grid').innerHTML = P.map(([brand, model, price, days, daily, img]) => `
+    <div class="card">
+      <div class="photo" style="background-image:url('https://images.unsplash.com/photo-${img}?w=900&q=80&auto=format&fit=crop')">
+        <span class="badge">Prestige</span>
+      </div>
+      <div class="body">
+        <div class="brandline">${brand}</div>
+        <div class="name">${model}</div>
+        <div class="price">${fc(price)}<small>FC</small></div>
+        <div class="stats">
+          <div class="stat daily"><div class="lbl">Revenu / jour</div><div class="val">${fc(daily)} FC</div></div>
+          <div class="stat dur"><div class="lbl">Durée</div><div class="val">${days} jours</div></div>
+        </div>
+      </div>
+    </div>`).join('');
+</script>
+</body>
+</html>
