@@ -114,6 +114,11 @@ export default function DashboardPage() {
               {certified.data && <CertifiedBadge />}
             </p>
             {profile?.full_name && <p className="text-sm text-night-200">{phone}</p>}
+            {certified.data === false && (
+              <Link to="/produits" className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-amber-200 hover:bg-white/20">
+                Compte non certifié · Acheter un produit Prestige
+              </Link>
+            )}
             {(profile?.province || profile?.city) && (
               <p className="flex items-center gap-1 text-sm text-night-200">
                 <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
