@@ -70,7 +70,8 @@ function toForm(v: Vehicle | null, _currency: string): FormState {
     duration_days: v?.duration_days?.toString() ?? '',
     daily_revenue_percent: v?.daily_revenue_percent?.toString() ?? '',
     availability: v?.availability ?? 'available',
-    collection: v?.collection ?? 'standard',
+    // Nouveaux produits : Prestige par défaut (seul espace proposé à la vente)
+    collection: v?.collection ?? 'prestige',
     location: v?.location ?? '',
     delivery_terms: v?.delivery_terms ?? '',
     seller_name: v?.seller_name ?? '',

@@ -27,7 +27,9 @@ export default function AdminDashboardPage() {
     { label: 'Total gagné par les utilisateurs', value: money(data.users_earned_total), sub: 'Revenus, commissions, récompenses et bonus' },
     { label: 'Retraits payés', value: money(data.withdrawals_paid_total) },
     { label: 'Commissions versées', value: money(data.commissions_paid_total) },
-    { label: 'Produits vendus', value: String(data.products_sold ?? 0) },
+    { label: 'Produits vendus', value: String(data.products_sold ?? 0), sub: 'Un par achat' },
+    { label: 'Membres ayant acheté', value: String(data.buyers_total ?? 0), sub: 'Chaque membre compté une seule fois' },
+    { label: 'Comptes certifiés', value: String(data.certified_members ?? 0), sub: 'Au moins un produit Prestige' },
     { label: 'Produits actifs', value: String(data.products_active ?? 0) },
   ];
 

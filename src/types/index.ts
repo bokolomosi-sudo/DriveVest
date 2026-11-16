@@ -443,6 +443,10 @@ export interface DashboardStats {
   withdrawals_paid_total: number;
   commissions_paid_total: number;
   products_sold: number;
+  /** Membres ayant acheté au moins un produit (chacun compté une fois) */
+  buyers_total?: number;
+  /** Membres certifiés : au moins un produit Prestige acheté */
+  certified_members?: number;
   products_active: number;
 }
 
@@ -490,6 +494,8 @@ export interface AdminUserOverview {
   team_level1: number;
   team_level2: number;
   invested_invitees: number;
+  /** A acheté au moins un produit Prestige */
+  certified?: boolean;
   total_deposits: number;
   total_withdrawals: number;
   total_commissions: number;

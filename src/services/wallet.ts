@@ -163,6 +163,13 @@ export async function requestWithdrawal(params: { amount: number; password: stri
 }
 
 /** Le membre connecté a-t-il déjà acheté au moins un produit ? (condition de retrait) */
+/** Le membre connecté a-t-il acheté au moins un produit Prestige ? (compte certifié, condition de retrait) */
+export async function iAmCertified(): Promise<boolean> {
+  const { data, error } = await db().rpc('i_am_certified');
+  if (error) throw error;
+  return data === true;
+}
+
 export async function iHavePurchased(): Promise<boolean> {
   const { data, error } = await db().rpc('i_have_purchased');
   if (error) throw error;

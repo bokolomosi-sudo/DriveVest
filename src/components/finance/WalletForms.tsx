@@ -342,7 +342,7 @@ export function WithdrawalConditions({ purchased, deposited, hasAccount }: { pur
   const feePercent = Number(settings?.withdrawal_fee_percent ?? 0);
   const items: { label: string; met?: boolean }[] = [
     { label: 'Avoir fait au moins un dépôt validé', met: deposited },
-    { label: 'Avoir acheté au moins un produit', met: purchased },
+    { label: 'Avoir acheté au moins un produit Prestige (compte certifié)', met: purchased },
     ...(minimum > 0 ? [{ label: `Montant minimum : ${formatPrice(minimum, CURRENCY)}` }] : []),
     { label: 'Mobile Money et mot de passe de retrait configurés', met: hasAccount },
     ...(feePercent > 0 ? [{ label: `Frais uniques de ${feePercent} % appliqués à chaque retrait` }] : []),
@@ -448,8 +448,8 @@ export function WithdrawalForm({
             </Alert>
           ) : !purchased && (
             <Alert tone="warning">
-              Achetez au moins un produit pour pouvoir retirer.{' '}
-              <Link to="/produits" className="font-semibold underline">Voir les produits</Link>
+              Pour effectuer un retrait, vous devez avoir acheté au moins un produit Prestige.{' '}
+              <Link to="/produits" className="font-semibold underline">Voir les produits Prestige</Link>
             </Alert>
           )}
           <div>

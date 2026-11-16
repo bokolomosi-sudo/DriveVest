@@ -17,6 +17,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { CertifiedBadge } from '../../components/account/Certification';
 import { AppDownloadCard } from '../../components/AppDownloadCard';
 import { PageMeta } from '../../components/PageMeta';
 import { PushOptIn } from '../../components/PushOptIn';
@@ -28,7 +29,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { CURRENCY, formatPrice } from '../../lib/format';
 import { formatPhone } from '../../lib/phoneAuth';
 import { countUnreadNotifications } from '../../services/account';
-import { getMyBalances, getTodayGains } from '../../services/wallet';
+import { getMyBalances, getTodayGains, iAmCertified } from '../../services/wallet';
 
 type Icon = ComponentType<{ className?: string }>;
 
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const userId = user!.id;
   const walletEnabled = Boolean(settings?.feature_wallet);
+  const certified = useAsync(iAmCertified, []);
 
   // Les revenus sont versés par le serveur (tâche planifiée) : rien à attendre ici
   const { data, loading, error, reload } = useAsync(async () => {
@@ -107,7 +109,10 @@ export default function DashboardPage() {
             </svg>
           </span>
           <div className="min-w-0">
-            <p className="truncate text-xl font-bold">{profile?.full_name || phone}</p>
+            <p className="flex min-w-0 items-center gap-1.5 text-xl font-bold">
+              <span className="truncate">{profile?.full_name || phone}</span>
+              {certified.data && <CertifiedBadge />}
+            </p>
             {profile?.full_name && <p className="text-sm text-night-200">{phone}</p>}
             {(profile?.province || profile?.city) && (
               <p className="flex items-center gap-1 text-sm text-night-200">

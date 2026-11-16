@@ -1,3 +1,4 @@
+import { CertifiedBadge } from '../../components/account/Certification';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, KeyRound, Lock, MapPin, Phone, ShieldCheck, Unlock, UserCog, Wallet } from 'lucide-react';
@@ -160,7 +161,11 @@ export default function AdminUserDetailPage() {
       <section className="rounded-3xl bg-gradient-to-br from-night-800 to-night-950 p-5 text-white">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="break-words text-xl font-extrabold uppercase tracking-wide">{u.full_name || 'Nom non renseigné'}</p>
+            <p className="flex flex-wrap items-center gap-2 break-words text-xl font-extrabold uppercase tracking-wide">
+              {u.full_name || 'Nom non renseigné'}
+              {o?.certified && <CertifiedBadge className="h-6 w-6" />}
+            </p>
+            {o && <p className="text-xs text-night-200">{o.certified ? 'Compte certifié (produit Prestige acheté)' : 'Compte non certifié : aucun produit Prestige'}</p>}
             <p className="mt-1 flex items-center gap-1.5 font-mono text-night-100"><Phone className="h-4 w-4" /> {formatLocalPhone(u.phone)}</p>
             {(u.city || u.province) && (
               <p className="flex items-center gap-1.5 text-sm text-night-200"><MapPin className="h-4 w-4" /> {[u.city, u.province].filter(Boolean).join(', ')}</p>

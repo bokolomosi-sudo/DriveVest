@@ -276,7 +276,7 @@ function WithdrawalSetupScreen({ focus }: { focus?: number }) {
 function WithdrawalScreen({ focus }: { focus?: number }) {
   const items = [
     { label: 'Avoir fait au moins un dépôt validé', met: true },
-    { label: 'Avoir acheté au moins un produit', met: true },
+    { label: 'Avoir acheté au moins un produit Prestige (compte certifié)', met: true },
     { label: 'Mobile Money et mot de passe de retrait configurés', met: true },
     { label: 'Retrait définitif une fois soumis' },
   ];

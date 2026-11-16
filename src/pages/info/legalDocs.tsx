@@ -174,7 +174,7 @@ function Terms() {
       <Section title="5. Retraits">
         <List
           items={[
-            'Pour retirer, il faut au moins un dépôt validé et au moins un produit acheté, ainsi qu’un compte de retrait et un mot de passe de retrait configurés.',
+            'Pour retirer, il faut au moins un dépôt validé et au moins un produit Prestige acheté (compte certifié), ainsi qu’un compte de retrait et un mot de passe de retrait configurés.',
             'Le montant minimum et les frais en vigueur sont affichés avant la confirmation. Le montant est bloqué dès la demande ; un retrait soumis est définitif.',
             'Le compte de retrait enregistré ne peut être modifié que par le service client.',
           ]}

@@ -22,7 +22,7 @@ export default function FaqPage() {
     { q: 'Puis-je acheter un produit sans dépôt ?', a: "Non : au moins un dépôt validé est obligatoire pour acheter. Le bonus d'inscription, les commissions et les bonus ne comptent pas comme dépôt." },
     {
       q: 'Quand puis-je retirer ?',
-      a: `Après au moins un dépôt validé et l'achat d'au moins un produit, avec un compte de retrait configuré.${minWithdrawal > 0 ? ` Retrait minimum : ${formatPrice(minWithdrawal, CURRENCY)}.` : ''} Les frais sont affichés avant confirmation.`,
+      a: `Après au moins un dépôt validé et l'achat d'au moins un produit Prestige (compte certifié), avec un compte de retrait configuré.${minWithdrawal > 0 ? ` Retrait minimum : ${formatPrice(minWithdrawal, CURRENCY)}.` : ''} Les frais sont affichés avant confirmation.`,
       link: { to: '/guide/faire-un-retrait', label: 'Voir le guide' },
     },
     { q: 'Comment changer mon numéro de retrait ?', a: 'Le compte de retrait ne peut être modifié que par le service client, pour protéger vos gains.' },

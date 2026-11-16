@@ -222,7 +222,7 @@ export function guideTopics(s: PlatformSettings | null): GuideTopic[] {
         },
       ],
       rules: [
-        'Pour retirer, il faut au moins un dépôt validé ET au moins un produit acheté.',
+        'Pour retirer, il faut au moins un dépôt validé ET au moins un produit Prestige acheté (compte certifié).',
         'Un retrait soumis est définitif.',
         'Le compte de retrait ne se modifie pas seul : contactez le service client pour le changer.',
       ],

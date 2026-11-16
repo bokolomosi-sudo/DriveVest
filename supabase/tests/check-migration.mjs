@@ -70,6 +70,12 @@ for (const file of migrations) {
   ok(`${file} appliquée sans erreur`);
 }
 await db.exec(`update platform_settings set signup_bonus = 0 where id = 1`);
+// Nouveau produit : espace « standard » par défaut dans le vrai schéma
+const collectionDefault = (await db.query(`select column_default from information_schema.columns
+  where table_schema = 'public' and table_name = 'vehicles' and column_name = 'collection'`)).rows[0]?.column_default ?? '';
+collectionDefault.includes('standard') ? ok('espace « standard » par défaut') : fail('espace par défaut', collectionDefault);
+// Les scénarios achètent des produits Prestige : le retrait l'exige
+await db.exec(`alter table vehicles alter column collection set default 'prestige'`);
 
 const migratedMin = Number((await db.query(`select min_withdrawal from platform_settings where id = 1`)).rows[0].min_withdrawal);
 console.log('2. Inscription (trigger profil + rôle)');
@@ -180,8 +186,22 @@ await as(ADMIN, `select admin_review_deposit($1, true)`, [dep.rows[0].id]);
 (await bal(INV)) === 1000 ? ok('dépôt crédité après vérification : 1000') : fail('solde', await bal(INV));
 
 await expectError('retrait refusé sans produit acheté', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /acheté au moins un produit/);
-// Achat simulé (commande réglée) pour tester la suite du parcours de retrait
-await db.exec(`insert into orders (user_id, status, total_amount, currency, idempotency_key) values ('${INV}', 'payment_confirmed', 0, 'CDF', gen_random_uuid())`);
+// Achat simulé d'un produit standard : ne suffit pas pour retirer
+await db.exec(`with o as (insert into orders (user_id, status, total_amount, currency, idempotency_key)
+    values ('${INV}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()) returning id),
+  v as (insert into vehicles (brand, model, condition, collection) values ('Ancien', 'Produit', 'new', 'standard') returning id)
+  insert into order_items (order_id, vehicle_id, vehicle_label, unit_price, currency, quantity)
+  select o.id, v.id, 'Ancien Produit', 0, 'CDF', 1 from o, v`);
+(await as(INV, `select i_am_certified() as c`)).rows[0].c === false ? ok('produit standard : compte non certifié') : fail('certification', 'certifié sans Prestige');
+await expectError('retrait refusé sans produit Prestige', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /au moins un produit Prestige/);
+// Achat simulé d'un produit Prestige : compte certifié, retrait possible
+await db.exec(`with o as (insert into orders (user_id, status, total_amount, currency, idempotency_key)
+    values ('${INV}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()) returning id),
+  v as (insert into vehicles (brand, model, condition, collection) values ('Rolls', 'Test', 'new', 'prestige') returning id)
+  insert into order_items (order_id, vehicle_id, vehicle_label, unit_price, currency, quantity)
+  select o.id, v.id, 'Rolls Test', 0, 'CDF', 1 from o, v`);
+(await as(INV, `select i_am_certified() as c`)).rows[0].c === true ? ok('produit Prestige acheté : compte certifié') : fail('certification', 'non certifié');
+await expectError('un visiteur ne peut pas lire la certification', () => as(null, `select i_am_certified()`), /permission denied/);
 await expectError('retrait sans portefeuille configuré refusé', () => as(INV, `select request_withdrawal_with_password(100, '1234', gen_random_uuid())`), /Configurez/);
 await expectError('ancien retrait sans mot de passe bloqué', () => as(INV, `select request_withdrawal(100, 'CDF', 'Mobile', '+000111', gen_random_uuid())`), /permission denied/);
 await expectError('numéro Airtel invalide refusé', () => as(INV, `select set_withdrawal_account('Airtel Money', 'Jean', '12345', '1234')`), /invalide/);
@@ -255,10 +275,23 @@ lv[0] === 3750 && lv[1] === 0 && lv[2] === 150
 await db.query(`update orders set status = 'cancelled' where id = any($1::uuid[])`, [simulated.rows.map((r) => r.id)]);
 const team = await as(R1, `select level from my_referrals()`);
 JSON.stringify(team.rows.map((r) => r.level)) === '[1,2,3]' ? ok('équipe visible sur 3 niveaux') : fail('équipe', JSON.stringify(team.rows));
-await expectOk('espace « standard » par défaut, « prestige » accepté', async () => {
-  const r = await as(ADMIN, `insert into vehicles (brand, model, condition) values ('Esp', 'Ace', 'new') returning collection`);
-  if (r.rows[0].collection !== 'standard') throw new Error(`reçu ${r.rows[0].collection}`);
+await expectOk('espaces « standard » et « prestige » acceptés', async () => {
+  await as(ADMIN, `insert into vehicles (brand, model, condition, collection) values ('Esp', 'Ace', 'new', 'standard')`);
   await as(ADMIN, `insert into vehicles (brand, model, condition, collection) values ('Pre', 'Stige', 'new', 'prestige')`);
+});
+await expectOk('produit acheté puis désactivé : toujours visible par son acheteur', async () => {
+  await db.query(`update vehicles set status = 'inactive' where id = $1`, [vehicleId]);
+  try {
+    const mine = await as(CLIENT, `select id from vehicles where id = $1`, [vehicleId]);
+    if (mine.rows.length !== 1) throw new Error("l'acheteur ne voit plus son produit");
+    const others = await as(OTHER, `select id from vehicles where id = $1`, [vehicleId]);
+    if (others.rows.length !== 0) throw new Error('un autre membre voit le produit désactivé');
+    const anon = await as(null, `select id from vehicles where id = $1`, [vehicleId]);
+    if (anon.rows.length !== 0) throw new Error('un visiteur voit le produit désactivé');
+    await expectError('produit désactivé : nouvel achat refusé', () => as(OTHER, `select create_order($1, gen_random_uuid())`, [vehicleId]), /pas disponible/);
+  } finally {
+    await db.query(`update vehicles set status = 'published' where id = $1`, [vehicleId]);
+  }
 });
 await expectError('espace inconnu refusé', () => as(ADMIN, `insert into vehicles (brand, model, condition, collection) values ('X', 'Y', 'new', 'vip')`), /vehicles_collection_check/);
 await expectError('produit en dollars refusé', () => as(ADMIN, `insert into vehicles (brand, model, condition, currency) values ('X', 'Y', 'new', 'USD')`), /vehicles_currency_cdf/);
@@ -506,8 +539,12 @@ console.log('24. Dépôt validé obligatoire');
 const E = '00000000-0000-0000-0000-0000000000e2';
 await db.exec(`insert into auth.users (id, email, raw_user_meta_data) values ('${E}', 'e@test.local', '{"referral_code":"${await codeOf(D)}"}')`);
 (await as(E, `select i_have_approved_deposit() v`)).rows[0].v === false ? ok('pas de dépôt validé détecté') : fail('i_have_approved_deposit', 'true');
-// Achat simulé pour isoler la condition de dépôt sur le retrait
-await db.exec(`insert into orders (user_id, status, total_amount, currency, idempotency_key) values ('${E}', 'payment_confirmed', 0, 'CDF', gen_random_uuid())`);
+// Achat simulé d'un produit Prestige pour isoler la condition de dépôt sur le retrait
+await db.exec(`with o as (insert into orders (user_id, status, total_amount, currency, idempotency_key)
+    values ('${E}', 'payment_confirmed', 0, 'CDF', gen_random_uuid()) returning id),
+  v as (insert into vehicles (brand, model, condition, collection) values ('Prestige', 'E', 'new', 'prestige') returning id)
+  insert into order_items (order_id, vehicle_id, vehicle_label, unit_price, currency, quantity)
+  select o.id, v.id, 'Prestige E', 0, 'CDF', 1 from o, v`);
 await as(E, `select set_withdrawal_account('Airtel Money', 'Membre E', '243974444444', '1234')`);
 await as(ADMIN, `select admin_wallet_adjustment($1, 10000, 'CDF', 'credit', 'Test retrait sans dépôt')`, [E]);
 await expectError('retrait refusé sans dépôt validé', () => as(E, `select * from request_withdrawal_with_password(7000, '1234', gen_random_uuid())`), /dépôt validé/);
